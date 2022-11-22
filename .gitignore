@@ -131,3 +131,6 @@ dmypy.json
 # Project-specific exclusions
 # Exclusing the source dataset(s) to keep the total repo size down
 data/amazon-meta*.txt
+data/*.csv
+data/*.json
+data/archive/*
