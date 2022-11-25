@@ -79,6 +79,7 @@ class Parser:
         self.categories = dict()
         self.category_map = dict()
         self.reviews = dict()
+        self.datestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
     def clean_string(self, string):
         # Escape single quotes which break Python string interpolation (JR)
@@ -296,22 +297,20 @@ class Parser:
         if dirpath is None:
             dirpath = self.data_repo
         
-        datestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-
         # Products
-        filepath = os.path.join(dirpath, 'products_%(ds)s.json' % {'ds': datestamp})
+        filepath = os.path.join(dirpath, 'products_%(ds)s.json' % {'ds': self.datestamp})
         with open(filepath, 'w', 1, 'utf-8') as f:
             json.dump(self.products, f)
         # Category Map
-        filepath = os.path.join(dirpath, 'category_map_%(ds)s.json' % {'ds': datestamp})
+        filepath = os.path.join(dirpath, 'category_map_%(ds)s.json' % {'ds': self.datestamp})
         with open(filepath, 'w', 1, 'utf-8') as f:
             json.dump(self.category_map, f)
         # Categories
-        filepath = os.path.join(dirpath, 'categories_%(ds)s.json' % {'ds': datestamp})
+        filepath = os.path.join(dirpath, 'categories_%(ds)s.json' % {'ds': self.datestamp})
         with open(filepath, 'w', 1, 'utf-8') as f:
             json.dump(self.categories, f)
         # Reviews
-        filepath = os.path.join(dirpath, 'reviews_%(ds)s.json' % {'ds': datestamp})
+        filepath = os.path.join(dirpath, 'reviews_%(ds)s.json' % {'ds': self.datestamp})
         with open(filepath, 'w', 1, 'utf-8') as f:
             json.dump(self.reviews, f)
 
@@ -338,13 +337,12 @@ class Parser:
         if dirpath is None:
             dirpath = self.data_repo
 
-        datestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
         # Product nodes & edges
-        filepath_product_node_headers = os.path.join(dirpath, 'n4db_product_node_header_%(datestamp)s.csv' % {'datestamp': datestamp})
-        filepath_product_node_data = os.path.join(dirpath, 'n4db_product_node_data_%(datestamp)s.csv' % {'datestamp': datestamp})
-        filepath_product_edge_headers = os.path.join(dirpath, 'n4db_product_edge_header_%(datestamp)s.csv' % {'datestamp': datestamp})
-        filepath_product_edge_data = os.path.join(dirpath, 'n4db_product_edge_data_%(datestamp)s.csv' % {'datestamp': datestamp})
+        filepath_product_node_headers = os.path.join(dirpath, 'n4db_product_node_header_%(ds)s.csv' % {'ds': self.datestamp})
+        filepath_product_node_data = os.path.join(dirpath, 'n4db_product_node_data_%(ds)s.csv' % {'ds': self.datestamp})
+        filepath_product_edge_headers = os.path.join(dirpath, 'n4db_product_edge_header_%(ds)s.csv' % {'ds': self.datestamp})
+        filepath_product_edge_data = os.path.join(dirpath, 'n4db_product_edge_data_%(ds)s.csv' % {'ds': self.datestamp})
 
         with open(filepath_product_node_headers, 'w', 1, 'utf-8') as csv:
             csv.write('\t'.join(['Id:ID', 'ASIN:string', 'title:string', 'group:string', 'salesrank:long', 'category_ct:int', 'review_ct:int', 'review_downloaded:int', 'review_avg_rating:int', ':LABEL']))
@@ -365,10 +363,10 @@ class Parser:
                             csv.write('\t'.join([product, sim_id, 'IS_SIMILAR_TO\n']))
         
         # Category nodes & edges
-        filepath_category_node_headers = os.path.join(dirpath, 'n4db_category_node_header_%(datestamp)s.csv' % {'datestamp': datestamp})
-        filepath_category_node_data = os.path.join(dirpath, 'n4db_category_node_data_%(datestamp)s.csv' % {'datestamp': datestamp})
-        filepath_category_edge_headers = os.path.join(dirpath, 'n4db_category_edge_header_%(datestamp)s.csv' % {'datestamp': datestamp})
-        filepath_category_edge_data = os.path.join(dirpath, 'n4db_category_edge_data_%(datestamp)s.csv' % {'datestamp': datestamp})
+        filepath_category_node_headers = os.path.join(dirpath, 'n4db_category_node_header_%(ds)s.csv' % {'ds': self.datestamp})
+        filepath_category_node_data = os.path.join(dirpath, 'n4db_category_node_data_%(ds)s.csv' % {'ds': self.datestamp})
+        filepath_category_edge_headers = os.path.join(dirpath, 'n4db_category_edge_header_%(ds)s.csv' % {'ds': self.datestamp})
+        filepath_category_edge_data = os.path.join(dirpath, 'n4db_category_edge_data_%(ds)s.csv' % {'ds': self.datestamp})
 
         with open(filepath_category_node_headers, 'w', 1, 'utf-8') as csv:
             csv.write('\t'.join(['Id:ID', 'category_path:string', ':LABEL']))
@@ -389,10 +387,10 @@ class Parser:
                     csv.write('\t'.join([product_id, cat_id, 'CATEGORIZED_AS\n']))
 
         # Review nodes & edges
-        filepath_review_node_headers = os.path.join(dirpath, 'n4db_review_node_header_%(datestamp)s.csv' % {'datestamp': datestamp})
-        filepath_review_node_data = os.path.join(dirpath, 'n4db_review_node_data_%(datestamp)s.csv' % {'datestamp': datestamp})
-        filepath_review_edge_headers = os.path.join(dirpath, 'n4db_review_edge_header_%(datestamp)s.csv' % {'datestamp': datestamp})
-        filepath_review_edge_data = os.path.join(dirpath, 'n4db_review_edge_data_%(datestamp)s.csv' % {'datestamp': datestamp})
+        filepath_review_node_headers = os.path.join(dirpath, 'n4db_review_node_header_%(ds)s.csv' % {'ds': self.datestamp})
+        filepath_review_node_data = os.path.join(dirpath, 'n4db_review_node_data_%(ds)s.csv' % {'ds': self.datestamp})
+        filepath_review_edge_headers = os.path.join(dirpath, 'n4db_review_edge_header_%(ds)s.csv' % {'ds': self.datestamp})
+        filepath_review_edge_data = os.path.join(dirpath, 'n4db_review_edge_data_%(ds)s.csv' % {'ds': self.datestamp})
 
         with open(filepath_review_node_headers, 'w', 1, 'utf-8') as csv:
             csv.write('\t'.join(['Id:ID', 'review_date:date', 'customer:string', 'rating:int', 'votes:int', 'helpful:int', ':LABEL']))
@@ -498,7 +496,6 @@ class N4J:
 
 
 def main(mode='parse'):
-    datestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     parser = Parser()
 
     if mode == 'parse':
