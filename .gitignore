@@ -134,3 +134,6 @@ data/amazon-meta*.txt
 data/*.csv
 data/*.json
 data/archive/*
+
+# Ignoring future changes now that the template has been uploaded
+etc/config.ini
