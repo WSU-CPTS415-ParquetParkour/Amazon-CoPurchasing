@@ -77,15 +77,14 @@ class Parser:
         self.data_repo = os.path.join(project_root, 'data')
         self.products = dict()
         self.categories = dict()
-        self.category_map = dict()  #TODO: COLLECT DISTINCT CATEGORY PATHS AS KEYS AND CREATE ENUMERATED IDS AS VALUES - BUILD MAP WHILE PARSING, ELIMINATE DUPLICATES
+        self.category_map = dict()
         self.reviews = dict()
 
     def clean_string(self, string):
         # Escape single quotes which break Python string interpolation (JR)
-        # string = re.sub("'", "\\'", string.strip())
         # Escape backslashes which break Cypher queries (JR)
-        # string = re.sub('\\', "\\\\", string.strip())
-        # Correct misordered quotes & commas
+        # Correct misordered quotes & commas (JR)
+        # Correct excess spacing around colons (JR)
         return string.strip().replace('\\', '\\\\').replace("'", "\\'").replace(",\"", "\",").replace('"', '\\\"').replace('\t', '').replace('  ', ' ').replace(' :', ':')
 
     def load(self, filename):
@@ -134,10 +133,7 @@ class Parser:
                     # line starts with simliar
                     # elif line.strip().startswith("similar"):
                     elif 'similar' in property_key:
-                        # TODO: CHANGE TO BE A SINGLE STRING, SEPARATED BY ';' FOR SINGLE-PASS PROCESSING OF RELATIONS IN NEO4J (JR)
                         data[current_id]['similar_to'] = ';'.join(line.strip().split()[2:])
-                        # data[current_id]['similar_to_n'] = len(line.strip().split()[2:])
-                        # data[current_id]['similar_to_n_match'] = int(line.strip().split()[1]) == len(line.strip().split()[2:])
 
                     elif line.strip().startswith("discontinued product"):
                         data[current_id]["title"] = ''
@@ -160,7 +156,7 @@ class Parser:
 
         return data
 
-    # Alternate version of load testing out match-case
+    # Alternate version of load() testing out match-case
     def load_switched(self, filename):
         self.parser_perf = PerfMon('Parser.load')
         self.parser_perf.add_timelog_event('init')
@@ -171,6 +167,7 @@ class Parser:
         with open(filename, 'r', 1, "utf-8") as dataset:
             for line in dataset:
 
+                # Reducing function call counts since this was a common operation (JR)
                 current_line = line.strip()
                 review_date = re.findall('^\d{4}-\d{1,2}-\d{1,2}', current_line)
 
@@ -197,7 +194,6 @@ class Parser:
                         self.categories[current_id] = dict()
 
                     # Build map of unique paths, expanding only when a new path is detected
-                    #WATCH FOR CAT57
                     if current_line not in self.category_map.keys():
                         self.category_map[current_line] = current_category_id
                         category_idx += 1
@@ -208,11 +204,7 @@ class Parser:
                     # This could probably be restructured as a flat list, but maintaining nested dictionary pattern for consistency (JR)
                     self.categories[current_id][self.category_map[current_line]] = current_line
 
-                    # category_tmp.append(current_line)
-                    # self.categories[current_id] = ';'.join(category_tmp)
-
                 elif len(review_date) > 0:
-                    #review_vals = {x:y for x,y in re.findall('(\w+):\s+(\w+|\d+)', current_line.replace('cutomer', 'customer'))}
                     current_review_id = 'rev%(r)s' % {'r': review_idx}
                     if current_id not in self.reviews.keys():
                         self.reviews[current_id] = dict()
@@ -220,62 +212,45 @@ class Parser:
                     if current_review_id not in self.reviews[current_id].keys():
                         self.reviews[current_id][current_review_id] = dict()
 
-                    # Unwind dictionaries and join them together
+                    # Unwind dictionaries and join them together (JR)
                     # 'customer' is misspelled as 'cutomer' (missing 's') in the data (JR)
-                    # TODO: EMBED UNIQUE REVIEW ID
                     self.reviews[current_id][current_review_id] = {
                         **{'review_date':review_date[0]},
                         **{x:y for x,y in re.findall('(\w+):\s+(\w+|\d+)', current_line.replace('cutomer', 'customer'))}
                     }
                     review_idx += 1
 
+                # By the ordering of the data in amazon-meta.txt this will be hit first,
+                # allowing property_key to be available in the prior conditions (JR)
                 else:
                     # Collect the major property key from the current line (JR)
                     property_key = re.findall('^(\w+)(?=:)', current_line)
+                    # Jedi 0.15.12 seems to not understand the match-case syntax, but Python 3.10+ executes as expected (JR)
                     match property_key:
-                        # when line starts with id, then its a new product
                         case ['Id']:
                             current_id = re.findall('(?<=%(prop)s:)\s+(.+)$' % {'prop': property_key}, current_line)[0]
                             self.products[current_id] = dict()
                         case ['ASIN']:
-                            self.products[current_id]['ASIN'] = line.strip().split(': ')[1]
+                            self.products[current_id]['ASIN'] = current_line.split(': ')[1]
                         case ['title']:
                             self.products[current_id]["title"] = self.clean_string(line[8:])
                         case ['group']:
-                            self.products[current_id]['group'] = line.strip().split(': ')[1]
+                            self.products[current_id]['group'] = current_line.split(': ')[1]
                         case ['salesrank']:
-                            self.products[current_id]['salesrank'] = line.strip().split(': ')[1]
+                            self.products[current_id]['salesrank'] = current_line.split(': ')[1]
                         case ['similar']:
-                            self.products[current_id]['similar_to'] = ';'.join(line.strip().split()[2:])
+                            self.products[current_id]['similar_to'] = ';'.join(current_line.split()[2:])
                         case ['categories']:
                             # Collected in the default section below
                             self.products[current_id]['category_ct'] = re.findall('\d+', current_line.replace('  ', ' '))[0]
                         case ['reviews']:
-                            # reviews: total: 2  downloaded: 2  avg rating: 5
                             review_meta = {x:y for x,y in re.findall('(?<=\s)(\w+\s*\w*):\s+(\d+)', current_line.replace('  ',' '))}
                             self.products[current_id] = {
                                 **self.products[current_id],
                                 **{"review_%(y)s" % {'y': x.replace(' ', '_')}:review_meta[x] for x in review_meta}
                             }
-
-                            # if current_id not in self.reviews.keys():
-                            #     self.reviews[current_id] = dict()
-
                         case _:
-                            # TODO: switch to accumulating without advancing, then add to the current dictionary when the break between items is reached
-                            # while current_line.strip().startswith('|'):
-                            #     categories.append(current_line.replace('  ', ' '))
-                            #     current_line = next(dataset).strip()
-
-                            # while len(re.findall('^\d{4}-\d{1,2}-\d{1,2}', current_line)) > 0:
-                            #     #'2000-7-28  cutomer: A2JW67OY8U6HHK  rating: 5  votes:  10  helpful:   9'
-                            #     reviews.append(current_line.replace('  ', ' '))
-                            #     current_line = next(dataset).strip()
-
-                            # if len(categories) > 0:
-                            #     self.products[current_id]['categories'] = ';'.join(categories)
-                            # if len(reviews) > 0:
-                            #     self.products[current_id]['reviews'] = ';'.join(reviews)
+                            # Ignore the line by default - if it's important, it needs to be allocated above (JR)
                             continue
 
                 # Update performance counters (JR)
@@ -322,7 +297,7 @@ class Parser:
             dirpath = self.data_repo
         
         datestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        # with open(os.path.join(project_root, 'data', 'parsed_full_%(datestamp)s.csv' % {'datestamp': datestamp}), 'w') as f:
+
         # Products
         filepath = os.path.join(dirpath, 'products_%(ds)s.json' % {'ds': datestamp})
         with open(filepath, 'w', 1, 'utf-8') as f:
@@ -570,43 +545,34 @@ def main(mode='parse'):
     parser = Parser()
 
     if mode == 'parse':
-        #dict of raw data
-        # dataset = load("sample.txt")
-        # Ensuring that the path is constructed agnostic to the system which runs this (JR)
         print('parsing data from amazon-meta.txt')
+        #dict of raw data
+        # Ensuring that the path is constructed agnostic to the system which runs this (JR)
         # dataset = parser.load(os.path.join(project_root, 'data', 'amazon-meta.txt'))
         # testing out match-case
-        dataset = parser.load_switched(os.path.join(project_root, 'data', 'amazon-meta.txt'))
+        parser.load_switched(os.path.join(project_root, 'data', 'amazon-meta.txt'))
         print('creating ASIN map for similar products')
         parser.similar_asin_to_id()
 
         print('exporting restructured data as json')
-        # parser.export_json_all(dataset, os.path.join(project_root, 'data', 'nodes_with_edges_%(datestamp)s.json' % {'datestamp': datestamp}))
         parser.export_json_all()
+
         # print('exporting restructured data as csv')
         # parser.export_csv_nodes_with_edgelists(dataset, os.path.join(project_root, 'data'))
+
         print('exporting as Neo4j db components for "neo4j-admin import database"')
         parser.export_neo4j_db_csv()
 
     elif mode == 'convert':
         # Importing prior export from JSON (JR)
         print('importing prior export')
-        # with open(os.path.join(project_root, 'data', 'parsed_full.json'), 'r') as j: dataset = json.load(j)
-        # dataset = parser.import_json_all(os.path.join(project_root, 'data', 'parsed_full.json'))
-        # dataset = parser.import_json_all(os.path.join(project_root, 'data', 'nodes_with_edges_20221119_230607.json'))
         parser.import_json_all(timestamp='20221121_163028')
 
-        # No longer needed here since these are created during the initial parse workflow above
+        # No longer needed at this point (normally) since these are created during the initial parse workflow above (JR)
         # print('converting ASINs to node ids')
         # parser.similar_asin_to_id()
 
-        # parser.export_csv_nodes(dataset, os.path.join(project_root, 'data', 'nodes_only.csv'))
-        # print('exporting as csv')
-        # parser.export_csv_edges(parser.returnsimilar(dataset), os.path.join(project_root, 'data', 'edges_only.csv'))
-        # parser.export_csv_nodes_with_edgelists(dataset, os.path.join(project_root, 'data'))
-
         print('exporting as Neo4j db components for "neo4j-admin import database"')
-        # parser.export_neo4j_db_csv(dataset, os.path.join(project_root, 'data'))
         parser.export_neo4j_db_csv()
 
     elif mode == 'upload':
