@@ -5,7 +5,7 @@ import re
 import json
 import configparser as cfg
 import time
-import string
+import logging
 from datetime import datetime
 from collections import Counter
 from neo4j import GraphDatabase as gdb
@@ -80,6 +80,17 @@ class Parser:
         self.category_map = dict()
         self.reviews = dict()
         self.datestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.latest_export_timestamp = None
+
+        # logger = logging.getlogger('parser')
+        # logger.setLevel(logging.INFO)
+        # log_ch = logging.StreamHandler()
+        # log_ch.setLevel(logging.INFO)
+        # log_formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s')
+        # log_ch.setFormatter(log_formatter)
+        # logger.addHandler(log_ch)
+
+        self.get_latest_export_timestamp()
 
     def clean_string(self, string):
         # Escape single quotes which break Python string interpolation (JR)
@@ -293,10 +304,51 @@ class Parser:
             if sim_asins != '':
                 self.products[product]['similar_to_ids'] = ';'.join([base_map[x] for x in sim_asins.split(';') if x in base_map.keys()])
 
+    def get_latest_export_timestamp(self):
+        export_history_path = os.path.join(project_root, 'var', 'logs')
+        export_history_log = os.path.join(export_history_path, 'export_history.log')
+        latest_timestamp = None
+        if not os.path.exists(export_history_path):
+            os.makedirs(export_history_path)
+        
+        if not os.path.isfile(export_history_log):
+            open(export_history_log, 'a').close()
+        
+        else:
+            # Open the history file in binary mode to read backwards and get the latest entry (JR)
+            with open(export_history_log, 'rb') as h:
+                try:
+                    h.seek(-2, os.SEEK_END)
+                    while h.read(1) != b'\n':
+                        h.seek(-2, os.SEEK_CUR)
+                except OSError: # In case there is only one line in the file (JR)
+                    h.seek(0)
+                latest_timestamp = h.readline().decode().strip()
+
+        return latest_timestamp
+
+    def add_export_timestamp(self, timestamp):
+        export_history_path = os.path.join(project_root, 'var', 'logs')
+        export_history_log = os.path.join(export_history_path, 'export_history.log')
+        latest_timestamp = None
+        if not os.path.exists(export_history_path):
+            os.makedirs(export_history_path)
+        
+        if not os.path.isfile(export_history_log):
+            open(export_history_log, 'a').close()
+        
+        else:
+            # Open the history file in binary mode to read backwards and get the latest entry (JR)
+            with open(export_history_log, 'a') as h:
+                h.write(timestamp + '\n')
+        return
+
     def export_json_all(self, data=None, dirpath=None):
         if dirpath is None:
             dirpath = self.data_repo
         
+        self.add_export_timestamp(self.datestamp)
+
         # Products
         filepath = os.path.join(dirpath, 'products_%(ds)s.json' % {'ds': self.datestamp})
         with open(filepath, 'w', 1, 'utf-8') as f:
@@ -318,6 +370,12 @@ class Parser:
         if dirpath is None:
             dirpath = self.data_repo
 
+        if timestamp is None:
+            if self.latest_export_timestamp is None:
+                raise Exception('No prior timestamps logged.')
+            else:
+                timestamp = self.latest_export_timestamp
+
         filepath = os.path.join(dirpath, 'products_%(ts)s.json' % {'ts': timestamp})
 
         with open(filepath, 'r') as j:
@@ -336,7 +394,6 @@ class Parser:
     def export_neo4j_db_csv(self, data=None, dirpath=None):
         if dirpath is None:
             dirpath = self.data_repo
-
 
         # Product nodes & edges
         filepath_product_node_headers = os.path.join(dirpath, 'n4db_product_node_header_%(ds)s.csv' % {'ds': self.datestamp})
@@ -518,6 +575,7 @@ def main(mode='parse'):
         # Importing prior export from JSON (JR)
         print('importing prior export')
         parser.import_json_all(timestamp='20221121_163028')
+        parser.export_json_all()
 
         # No longer needed at this point (normally) since these are created during the initial parse workflow above (JR)
         # print('converting ASINs to node ids')
