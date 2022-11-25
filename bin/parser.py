@@ -318,8 +318,9 @@ class Parser:
     def import_json_all(self, timestamp, dirpath=None):
         if dirpath is None:
             dirpath = self.data_repo
-        # with open(os.path.join(project_root, 'data', 'parsed_full.json'), 'r') as j:
+
         filepath = os.path.join(dirpath, 'products_%(ts)s.json' % {'ts': timestamp})
+
         with open(filepath, 'r') as j:
             self.products = json.load(j)
         filepath = os.path.join(dirpath, 'category_map_%(ts)s.json' % {'ts': timestamp})
@@ -332,50 +333,6 @@ class Parser:
         with open(filepath, 'r') as j:
             self.reviews = json.load(j)
         return
-
-    def export_json_edges(self, data, filepath):
-        with open(filepath, 'w') as f:
-            json.dump(data, f)
-
-    def export_csv_nodes(self, data, filepath):
-        with open(filepath,'w', 1, "utf-8") as csv:
-            csv.write('Id,ASIN,title,group,salesrank\n')
-            for product in data:
-                csv.write(','.join([product,','.join([x for x in data[product].values()][0:4])]).replace('\n', '') + '\n')
-
-    def export_csv_edges(self, data, filepath):
-        with open(filepath, 'w') as csv:
-            csv.write('product,similar_to\n')
-            for product in data:
-                csv.write(','.join(product) + '\n')
-
-    def export_csv_edges_nested(self, data, filepath):
-        # Handles the ';' delimited list variant
-        with open(filepath, 'w') as csv:
-            csv.write('product,similar_to\n')
-            for product in data:
-                similar_set = [[data[product]['ASIN'], x] for x in data[product]['similar'].split(sep=';')]
-                for pair in similar_set:
-                    csv.write(','.join(pair) + '\n')
-
-    def export_csv_nodes_with_edgelists(self, data, dirpath, split=False):
-        # TODO: CLONE & REWRITE TO HANDLE INTERNAL OBJECTS FOR products, categories, & reviews
-        datestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        if split:
-            nodespath = os.path.join(dirpath, 'nodes_%(datestamp)s.csv' % {'datestamp': datestamp})
-            edgespath = os.path.join(dirpath, 'edges_%(datestamp)s.csv' % {'datestamp': datestamp})
-            self.export_csv_nodes(data, nodespath)
-            self.export_csv_edges_nested(data, edgespath)
-            
-        else:
-            filepath = os.path.join(dirpath, 'nodes_with_edges_%(datestamp)s.csv' % {'datestamp': datestamp})
-            with open(filepath,'w', 1, "utf-8") as csv:
-                csv.write('Id,ASIN,title,group,salesrank,similar_to,categories,review_meta,reviews\n')
-                for product in data:
-                    if 'similar_n_match' in data[product]:
-                        if data[product]['similar_n_match'] == False:
-                            print('similar item length mismatch')
-                    csv.write(','.join([product,','.join([str(x).strip() for x in data[product].values()])]).replace('\n', '') + '\n')
 
     def export_neo4j_db_csv(self, data=None, dirpath=None):
         if dirpath is None:
@@ -556,9 +513,6 @@ def main(mode='parse'):
 
         print('exporting restructured data as json')
         parser.export_json_all()
-
-        # print('exporting restructured data as csv')
-        # parser.export_csv_nodes_with_edgelists(dataset, os.path.join(project_root, 'data'))
 
         print('exporting as Neo4j db components for "neo4j-admin import database"')
         parser.export_neo4j_db_csv()
