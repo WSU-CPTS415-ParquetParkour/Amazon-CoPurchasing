@@ -14,8 +14,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# allowing these as we need the lib directory for additional classes
+# lib/
+# lib64/
 parts/
 sdist/
 var/
