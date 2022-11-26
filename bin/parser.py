@@ -575,7 +575,6 @@ def main(mode='parse'):
         # Importing prior export from JSON (JR)
         print('importing prior export')
         parser.import_json_all(timestamp='20221121_163028')
-        parser.export_json_all()
 
         # No longer needed at this point (normally) since these are created during the initial parse workflow above (JR)
         # print('converting ASINs to node ids')
@@ -603,4 +602,4 @@ def main(mode='parse'):
     
    
 if __name__ == "__main__":
-    main('convert')
+    main('parse')
