@@ -79,6 +79,7 @@ class Parser:
         self.categories = dict()
         self.category_map = dict()
         self.reviews = dict()
+        self.customer_map = dict() #TODO: GENERATE MAP OF USER IDS SIMILAR TO category_map TO GENERATE USER NODES WHICH POINT TO MULTIPLE REVIEW & PRODUCT NODES
         self.datestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.latest_export_timestamp = None
 
