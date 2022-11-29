@@ -14,8 +14,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# allowing these as we need the lib directory for additional classes
+# lib/
+# lib64/
 parts/
 sdist/
 var/
@@ -131,3 +132,9 @@ dmypy.json
 # Project-specific exclusions
 # Exclusing the source dataset(s) to keep the total repo size down
 data/amazon-meta*.txt
+data/*.csv
+data/*.json
+data/archive/*
+
+# Ignoring future changes now that the template has been uploaded
+etc/config.ini
