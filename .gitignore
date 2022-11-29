@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Project-specific exclusions
+# Exclusing the source dataset(s) to keep the total repo size down
+data/amazon-meta*.txt
