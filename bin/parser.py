@@ -1,80 +1,30 @@
 #! /usr/bin/python3
 
 import os
+import sys
 import re
 import json
+# import logging
 import configparser as cfg
-import time
-import logging
 from datetime import datetime
-from collections import Counter
 from neo4j import GraphDatabase as gdb
 
 project_root = re.sub('(?<=Amazon-CoPurchasing).*', '', os.path.abspath('.'))
 config_path = os.path.join(project_root, 'etc', 'config.ini')
 
+# Add reference path to access files in /lib/ (JR)
+sys.path.insert(0, os.path.join(project_root, 'lib'))
+
+from acpN4J import N4J
+from acpPerfMon import PerfMon
+
 config = cfg.ConfigParser()
 config.read(config_path)
 
-class PerfMon:
-    def __init__(self, caller_name):
-        # List of tuples in the form [(timestamp, action)] (JR)
-        self.timelog = []
-        # Counter() stores values as a dict in the form {'item': n}
-        self.counter = Counter()
-        self.measured_fn_name = caller_name
-
-    def add_timelog_event(self, action):
-        self.timelog += [(time.perf_counter(), action)]
-
-    def increment_counter(self, event):
-        self.counter[event] += 1
-
-    def get_all(self):
-        return {'timelog': self.timelog, 'event counters': self.counter}
-
-    def summarise(self):
-        total_time = self.timelog[-1][0]-self.timelog[0][0]
-        total_ops = sum([x for x in self.counter.values()])
-        summary = {
-            'total duration': f'{total_time:0.4f}',
-            'average op time': f'{total_time/len(self.timelog):0.4f}',
-            'total ops': f'{total_ops}'
-        }
-        return summary
-    
-    def log_all(self):
-        datestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_path = os.path.join(project_root, 'var', 'perf')
-        summary = self.summarise()
-
-        timelog_path = os.path.join(output_path, '%(datestamp)s_timelog_%(caller)s.csv' % {'caller':self.measured_fn_name, 'datestamp':datestamp})
-        counts_path = os.path.join(output_path, '%(datestamp)s_counts_%(caller)s.csv' % {'caller':self.measured_fn_name, 'datestamp':datestamp})
-        summary_path = os.path.join(output_path, '%(datestamp)s_summary_%(caller)s.csv' % {'caller':self.measured_fn_name, 'datestamp':datestamp})
-
-        # Ensure that the output path exists (JR)
-        if not os.path.exists(output_path):
-            os.mkdir(output_path)
-
-        with open(timelog_path, 'w', 1, encoding='utf-8') as log:
-            log.write('timestamp,action\n')
-            for event in self.timelog:
-                log.write('%(ts)s,%(ev)s\n' % ({'ts':str(event[0]), 'ev':str(event[1])}))
-
-        with open(counts_path, 'w', 1, encoding='utf-8') as log:
-            log.write('event,n\n')
-            for event, count in self.counter.items():
-                log.write('%(event)s,%(count)s\n' % ({'event':str(event), 'count':str(count)}))
-
-        with open(summary_path, 'w', 1, encoding='utf-8') as log:
-            log.write('measure,value\n')
-            for stat, val in summary.items():
-                log.write('%(stat)s,%(val)s\n' % ({'stat':str(stat), 'val':str(val)}))
-
-
 class Parser:
-    def __init__(self):
+    def __init__(self, batch_size=500):
         self.data_repo = os.path.join(project_root, 'data')
+        self.batch_size = batch_size
         self.products = dict()
         self.categories = dict()
         self.category_map = dict()
@@ -171,7 +121,7 @@ class Parser:
 
     # Alternate version of load() testing out match-case
     def load_switched(self, filename):
-        self.parser_perf = PerfMon('Parser.load')
+        self.parser_perf = PerfMon('Parser.load_switched')
         self.parser_perf.add_timelog_event('init')
 
         review_idx = 0
@@ -466,91 +416,6 @@ class Parser:
             for product_id in self.reviews:
                 for rev_id in self.reviews[product_id].keys():
                     csv.write('\t'.join([product_id, rev_id, 'REVIEWED_BY\n']))
-
-
-# Methods for loading data into neo4j db (JR)
-class N4J:
-    def __init__(self):
-        self.endpoint = ''.join(['bolt://', config.get('database_connection', 'dbhost'), ':', config.get('database_connection', 'dbport')])
-        self.driver = gdb.driver(
-            self.endpoint,
-            auth=(config.get('database_connection', 'dbuser'), config.get('database_connection', 'dbpass'))
-        )
-
-    def close(self):
-        self.driver.close()
-
-    def add_node(self, idx, node_data):
-        with self.driver.session() as session:
-            result = session.execute_write(self._create_acp_n4_node, idx, node_data)
-            return result # Switch to log? (JR)
-
-    def add_node_set(self, node_dataset):
-        # Thin wrapper around add_node() to capture timing data (JR)
-        perf = PerfMon('N4J.add_node_set')
-        perf.add_timelog_event('init')
-        for node in node_dataset:
-            self.add_node(node, node_dataset[node])
-            perf.add_timelog_event('add node')
-            perf.increment_counter('add node')
-        perf.add_timelog_event('end')
-        perf.log_all()
-
-    def add_edge(self, source, destination, relation_str):
-        with self.driver.session() as session:
-            result = session.execute_write(self._create_acp_n4_edge, source, destination, relation_str)
-
-    def add_edges(self, edgelist, relation_str):
-        perf = PerfMon('N4J.add_edges')
-        perf.add_timelog_event('init')
-        for pair in edgelist:
-            self.add_edge(pair[0], pair[1], relation_str)
-            perf.add_timelog_event('add edge')
-            perf.increment_counter('add edge')
-        perf.add_timelog_event('end')
-        perf.log_all()
-
-    def load_csv(self, csv_path):
-        perf = PerfMon('N4J.load_csv')
-        perf.add_timelog_event('init')
-        result = session.execute_write(self._load_acp_csv, csv_path)
-        perf.add_timelog_event('end')
-        perf.log_all()
-
-    @staticmethod
-    def _create_acp_n4_node(transaction, idx, label, node_data):
-        # Combine values by unpacking to get interpolation to work without additional string processing - merge operator ('|') only exists for Python 3.9+ (JR)
-        # Need to prepend with a character since neo4j does not allow for node names to start with numbers: https://neo4j.com/docs/cypher-manual/current/syntax/naming/ (JR)
-        # The node name can easily be replaced with another value, this is just to prototype the process before the data model is ready (JR)
-        # cypher = 'CREATE (%(idx)s:Product {ASIN:\'%(ASIN)s\', title:\'%(title)s\', group:\'%(group)s\', salesrank:\'%(salesrank)s\'})' % {**{'idx':'a_' + idx}, **node_data}
-        cypher = 'CREATE (Product:\'%(lab)s\' {ASIN:\'%(ASIN)s\', title:\'%(title)s\', group:\'%(group)s\', salesrank:\'%(salesrank)s\'})' % {**{'lab':label}, **node_data}
-        result = transaction.run(cypher)
-        return
-    
-    @staticmethod
-    def _create_acp_n4_edge(transaction, src, dest, relation):
-        # Performance improvement?  Generate edges by all ASINs in 'similar'
-        # May require the 'similar' set of ASINs added to each node?  Restructuring of dict?
-        # Example:
-            # MATCH (a:PRODUCT)
-            # WHERE a.ASIN IN ['039474067X','0679730672','0679750541','1400030668','0896086704']
-            # RETURN COUNT(a)
-        # Mockup:
-            # MATCH (a:PRODUCT), (b:PRODUCT)
-            # WHERE b.ASIN IN a.similar
-            # CREATE (a)-[:%(rel)s]->(b)
-
-        # TODO: Add primary key for nodes; UNIQUE property
-        # Specify unique node id instead of letting neo4j define it - find out what the limitations of this are
-        cypher = 'MATCH (a:PRODUCT), (b:PRODUCT) WHERE a.ASIN = \'%(from)s\' AND b.ASIN = \'%(to)s\' CREATE (a)-[:%(rel)s]->(b)' % {'from':src, 'to':dest, 'rel':relation}
-        result = transaction.run(cypher)
-        return
-
-    @staticmethod
-    def _load_acp_csv(transaction, csv):
-        cypher = ''
-        result = transaction.run(cypher)
-        return
 
 
 def main(mode='parse'):
