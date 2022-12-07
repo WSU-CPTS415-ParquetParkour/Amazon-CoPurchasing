@@ -135,6 +135,11 @@ data/amazon-meta*.txt
 data/*.csv
 data/*.json
 data/archive/*
+data/csv_batches/*
+data/json_batches/*
+data/latest_parsed/*
+data/split_data/*
 
 # Ignoring future changes now that the template has been uploaded
 etc/config.ini
+
