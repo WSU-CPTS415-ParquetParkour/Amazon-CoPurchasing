@@ -140,7 +140,7 @@ class Parser:
                     f.write('\n')
 
 
-    # Alternate version of load_batched() for execution in parallel
+    # Alternate version of load() for execution in parallel (JR)
     def load_split(self, filename):
         self.parser_perf = PerfMon('Parser.load_split')
         self.parser_perf.add_timelog_event('init')
@@ -157,8 +157,6 @@ class Parser:
         }
 
         current_id = None
-        # review_idx = 0
-        # category_idx = 0
         batch_idx = 0
         file_segment = False
 
@@ -180,20 +178,18 @@ class Parser:
                     continue
 
                 # This will not get hit when using the split dataset as these lines are excluded (JR)
+                # Retaining in case of execution where these lines remain (JR)
                 elif current_line.startswith("discontinued product"):
-                    #TODO: Validate if this is necessary now that all fields are initialized when an ID is found
                     self.products[current_id] = {x:None for x in node_fields['product']}
 
                 elif current_line.startswith('|'):
-                    # current_category_id = 'cat%(c)s' % {'c': category_idx}
                     current_category_id = hl.md5(current_line.encode('utf-8')).hexdigest()
                     if current_id not in self.categories.keys():
                         self.categories[current_id] = dict()
 
-                    # Build map of unique paths, expanding only when a new path is detected
+                    # Build map of unique paths, expanding only when a new path is detected (JR)
                     if current_line not in self.category_map.keys():
                         self.category_map[current_line] = current_category_id
-                        # category_idx += 1
 
                     if current_category_id not in self.categories[current_id].keys():
                         self.categories[current_id][self.category_map[current_line]] = dict()
@@ -204,8 +200,6 @@ class Parser:
                     
 
                 elif len(review_date) > 0:
-                    #TODO: NEED TO COMPILE UNIQUE CHECKSUM FOR REVIEW LINE TO USE AS ID ACROSS THREADS
-                    # current_review_id = 'rev%(r)s' % {'r': review_idx}
                     current_review_id = hl.md5(' '.join([current_id, current_line]).encode('utf-8')).hexdigest()
                     if current_id not in self.reviews.keys():
                         self.reviews[current_id] = dict()
@@ -239,14 +233,10 @@ class Parser:
                         **{'helpful_ratio': helpful_ratio}
                     }
 
-                    # review_idx += 1
-                
                 elif current_id is not None and current_line == '':
                     if len(self.products) >= self.batch_size or len(self.categories) >= self.batch_size or len(self.reviews) >= self.batch_size:
-                        # dump data to disk
+                        # Writing as json to easily retain field names; CSV may be more performant, but would require additional steps to map field titles during collation (JR).
                         # self.dump_neo4j_db_csvs(batch_id=str(batch_idx).zfill(6))
-
-                        # testing batch output as json
                         self.dump_json(batch_id=str(batch_idx).zfill(6))
                         if not file_segment:
                             batch_idx += 1
@@ -284,16 +274,8 @@ class Parser:
                             }
                         }
 
-                        # self.reviews[current_id] = {
-                        #     **self.reviews[current_id],
-                        #     **{
-                                
-                        #     }
-                        # }
-                    
                     if current_id in self.categories.keys():
                         # Collect and preprocess values (JR)
-                        # path_lengths = [float(len(re.findall('\|', self.categories[current_id][c]))) for c in self.categories[current_id]]
                         path_depths = [float(self.categories[current_id][c]['path_depth']) for c in self.categories[current_id]]
                         # Apply aggregate calculations (JR)
                         self.products[current_id]['category_path_ct']           = len(path_depths)
@@ -325,7 +307,6 @@ class Parser:
                         case 'reviews':
                             # Only pulling the total and download count here. (JR)
                             # Average rating will be calculated with other summary statistics by aggregation of values across each review entry (JR)
-                            # 'review_ct', 'review_downloaded_ct', 'review_rating_avg'
                             review_meta = {x:y for x,y in re.findall('(?<=\s)(\w+\s*\w*):\s+(\d+)', current_line.replace('  ',' ')) if x != 'avg rating'}
                             self.products[current_id] = {
                                 **self.products[current_id],
@@ -341,8 +322,8 @@ class Parser:
 
             # Write any remaining data to disk (JR)
             if len(self.products) > 0 or len(self.categories) > 0 or len(self.reviews) > 0:
+                # Writing as json to easily retain field names; CSV may be more performant, but would require additional steps to map field titles during collation (JR).
                 # self.dump_neo4j_db_csvs(batch_id=str(batch_idx).zfill(6))
-                # testing batch output as json
                 self.dump_json(batch_id=str(batch_idx).zfill(6))
 
             self.parser_perf.add_timelog_event('end')
@@ -380,8 +361,9 @@ class Parser:
         if not os.path.exists(export_history_path):
             os.makedirs(export_history_path)
 
-        with open(export_history_log, 'a', 1, 'utf-8') as hl:
-            hl.write(self.datestamp + '\n')
+        if self.get_latest_export_timestamp() != self.datestamp:
+            with open(export_history_log, 'a', 1, 'utf-8') as hl:
+                hl.write(self.datestamp + '\n')
 
         return
 
@@ -405,9 +387,6 @@ class Parser:
             raise Exception('Unknown dataset %(name)s.  Expected one of the following: %(opts)s' % {'name': dataset_name, 'opts': ', '.join(self.export_vars)})
 
         # If no name is provided, construct one using the requested dataset (JR)
-        # if len(name_base) == 0:
-            # name_base = 'n4db_%(idx)s' %{'idx': len([x for x in os.listdir(dirpath) if x.startswith('n4db') and 'header' in x])}
-
         name_base = 'n4db_%(dsn)s' % {'dsn': dataset_name}
 
         header_maps = {
@@ -442,21 +421,14 @@ class Parser:
         }
 
         # Product nodes & edges
-        # filepaths_node_header = {name:os.path.join(dirpath, 'n4db_%(n)s_node_header_%(ds)s.csv' % {'n': name, 'ds': self.datestamp}) for name in self.export_vars}
-        # filepaths_node_data = {name:os.path.join(dirpath, 'n4db_%(n)s_node_data_%(ds)s.csv' % {'n': name, 'ds': self.datestamp}) for name in self.export_vars}
-
         file_labels = [item for sublist in [['_'.join([x,y]) for x in ['node', 'edge']] for y in ['header', 'data']] for item in sublist]
 
         filepaths = {
             'node': {
-                'header': os.path.join(dirpath, '%(base)s_node_header.csv' % {'base': name_base}) #,
-                # 'header': os.path.join(dirpath, '%(base)s_node_header_%(ds)s.csv' % {'base': name_base, 'ds': self.datestamp}) #,
-                # 'data': os.path.join(dirpath, '%(base)s_node_data_%(ds)s.csv' % {'base': name_base, 'ds': self.datestamp})
+                'header': os.path.join(dirpath, '%(base)s_node_header.csv' % {'base': name_base})
             },
             'edge': {
-                'header': os.path.join(dirpath, '%(base)s_edge_header.csv' % {'base': name_base}) #,
-                # 'header': os.path.join(dirpath, '%(base)s_edge_header_%(ds)s.csv' % {'base': name_base, 'ds': self.datestamp}) #,
-                # 'data': os.path.join(dirpath, '%(base)s_edge_data_%(ds)s.csv' % {'base': name_base, 'ds': self.datestamp})
+                'header': os.path.join(dirpath, '%(base)s_edge_header.csv' % {'base': name_base})
             },
             'summary': {
                 'header': os.path.join(dirpath, '%(base)s_summary_header.csv' % {'base': name_base})
@@ -467,22 +439,10 @@ class Parser:
             filepaths['node']['data'] = os.path.join(dirpath, '%(base)s_node_data.csv' % {'base': name_base})
             filepaths['edge']['data'] = os.path.join(dirpath, '%(base)s_edge_data.csv' % {'base': name_base})
             filepaths['summary']['data'] = os.path.join(dirpath, '%(base)s_summary_data.csv' % {'base': name_base})
-            # filepaths['node']['data'] = os.path.join(dirpath, '%(base)s_node_data_%(ds)s.csv' % {'base': name_base, 'ds': self.datestamp})
-            # filepaths['edge']['data'] = os.path.join(dirpath, '%(base)s_node_data_%(ds)s.csv' % {'base': name_base, 'ds': self.datestamp})
         else:
             filepaths['node']['data'] = os.path.join(dirpath, '%(base)s_node_data_%(bid)s.csv' % {'base': name_base, 'bid': batch_id})
             filepaths['edge']['data'] = os.path.join(dirpath, '%(base)s_edge_data_%(bid)s.csv' % {'base': name_base, 'bid': batch_id})
             filepaths['summary']['data'] = os.path.join(dirpath, '%(base)s_summary_data_%(bid)s.csv' % {'base': name_base, 'bid': batch_id})
-            # filepaths = {
-            #     'node': {
-            #         'header': os.path.join(dirpath, '%(base)s_node_header_%(ds)s.csv' % {'base': name_base, 'ds': self.datestamp}) #,
-            #         # 'data': os.path.join(dirpath, '%(base)s_node_data_%(ds)s_%(bid)s.csv' % {'base': name_base, 'ds': self.datestamp, 'bid': batch_id})
-            #     },
-            #     'edge': {
-            #         'header': os.path.join(dirpath, '%(base)s_edge_header_%(ds)s.csv' % {'base': name_base, 'ds': self.datestamp}) #,
-            #         # 'data': os.path.join(dirpath, '%(base)s_edge_data_%(ds)s_%(bid)s.csv' % {'base': name_base, 'ds': self.datestamp, 'bid': batch_id})
-            #     },
-            # }
 
         #TODO: split node and data writes into separate functions to be run in parallel (JR)
         if not os.path.isfile(filepaths['node']['header']):
@@ -503,7 +463,6 @@ class Parser:
             match dataset_name:
                 case 'product':
                     for product in self.products:
-                        # output = '\t'.join([product, '\t'.join([str(x[1]).strip() for x in self.products[product].items() if not x[0].startswith('similar')]), 'PRODUCT\n'])
                         # Attempting to work around needing to map ASINs to IDs across multiple files by using ASINs as the node ID (JR)
                         output = '\t'.join(['\t'.join([str(y).strip() for x,y in self.products[product].items() if not x == 'similar_to']), 'PRODUCT\n'])
                         csv.write(output)
@@ -525,6 +484,8 @@ class Parser:
                         output = '\t'.join([customer_id, '\t'.join([str(y).strip() for x,y in self.customers[customer_id].items() if not x == 'reviews']), 'CUSTOMER\n'])
                         csv.write(output)
 
+        # TODO: Validate performance of set comprehension/generator vs traditional for loops (JR)
+        # Using set comprehension to ensure only unique tuples are output - was running into duplicates being created previously. (JR)
         with open(filepaths['edge']['data'], 'a', 1, 'utf-8') as csv:
             print('Generating %(ds)s edges.' % {'ds': dataset_name})
             match dataset_name:
@@ -540,8 +501,6 @@ class Parser:
                     #         if sim_asin != '' and sim_asin is not None:
                     #             csv.write('\t'.join([self.products[product]['ASIN'], sim_asin, 'IS_SIMILAR_TO\n']))
                 case 'category':
-                    #TODO: ENSURE catid INDEX PERSISTS ACROSS EXPORTS
-                    #TODO: PREVENT DUPLICATE catid, path ENTRIES
                     edge_pairs = set('\t'.join([self.products[pid]['ASIN'], cid, 'CATEGORIZED_AS\n']) for pid,pval in self.categories.items() for cid in pval)
                     for pair in edge_pairs:
                         csv.write(pair)
@@ -573,7 +532,7 @@ class Parser:
                 sf.write(output)
 
     def dump_neo4j_db_csvs(self, batch_id=None):
-        # Exporting all datasets
+        # Exporting all datasets (JR)
         for ds in self.export_vars:
             self.export_neo4j_db_csv(ds, batch_id)
 
@@ -661,9 +620,6 @@ class Parser:
                 }
 
             case 'customer':
-                # customer_ids = [x for x in self.customers]
-                # customers = {x:{} for x in customer_ids}
-                # customers = dict()
                 customer_review_cts = list()
                 customer_vote_cts = list()
                 customer_helpful_ratios = list()
@@ -677,13 +633,6 @@ class Parser:
 
                     if cid not in self.customers.keys():
                         self.customers[cid] = dict()
-
-                    # for rev in self.customers[cid]:
-                    #     review_dates.append(datetime.strptime(self.customers[cid][rev]['review_date'], '%Y-%m-%d'))
-                    #     helpful_resp.append(int(self.customers[cid][rev]['helpful']))
-                    #     ratings.append(int(self.customers[cid][rev]['rating']))
-                    #     votes.append(int(self.customers[cid][rev]['votes']))
-                    #     helpful_ratios.append(int(self.customers[cid][rev]['helpful_ratio']))
 
                     review_dates    = [datetime.strptime(y['review_date'], '%Y-%m-%d') for x,y in self.customers[cid].items()]
                     days_between_reviews = [x.days for x in np.ediff1d([d for d in sorted(review_dates)])]
@@ -725,7 +674,6 @@ class Parser:
                     'helpful_ratio_sd'  : round(np.std(customer_helpful_ratios), self.precision)
                 }
 
-            # case _:
         self.export_neo4j_db_csv(dataset_name=subset, include_summary=True)
 
     def merge(self, timestamp=None, subset=None):
@@ -782,124 +730,51 @@ class ParseAsync():
             # Wait until all processes have finished
             pool.join()
 
-        # Postprocessing phase
-        
         return
     
-    def parse_async_map(self, files):
-        pool = Pool(self.process_cap)
-        parser = Parser()
-
-        # Initial parsing phase
-        try:
-            tmp_results = pool.starmap_async(self.load_split, [(parser, i, f) for i, f in enumerate(files)], callback=self.collect_results)
-            self.results = tmp_results.get()
-        finally:
-            pool.close()
-            # Wait until all processes have finished
-            pool.join()
-
-        # Postprocessing phase
-        
-        return
-
     def collect_results(self, result):
         self.results.append(result)
 
 
 def main(mode='parse'):
     parser = Parser()
+    json_repo = os.path.join(prj_root, 'data', 'json_batches')
 
-    if mode == 'parse':
-        print('parsing data from amazon-meta.txt')
-        parser.load_batched(os.path.join(project_root, 'data', 'amazon-meta.txt'))
-        print('creating ASIN map for similar products')
-        parser.similar_asin_to_id()
+    match mode:
+        case 'split':
+            parser.split_file(filename=os.path.join(project_root, 'data', 'amazon-meta.txt'))
 
-        print('exporting restructured data as json')
-        parser.export_json_all()
+        case 'parse_async_apply':
+            print('Parsing source data file via apply_async.')
+            async_parser = ParseAsync()
+            async_parser.parse_async_apply([os.path.join(project_root, 'data', 'split_data', f) for f in os.listdir(os.path.join(project_root, 'data', 'split_data'))])
 
-        print('exporting as Neo4j db components for "neo4j-admin import database"')
-        parser.export_neo4j_db_csv()
+        case 'merge':
+            latest_datasets = [x for x in sorted(os.listdir(json_repo))]
+            if len(latest_datasets) > 0:
+                for ds in parser.export_vars:
+                    print('Collating and exporting %(ds)s data.' % {'ds': ds})
+                    parser.merge(timestamp=latest_datasets[-1], subset=ds)
+            else:
+                print('No datasets present within %(path)s to parse.' % {'path': json_repo})
 
-    elif mode == 'parse_split_single':
-        parser.load_split(os.path.join(project_root, 'data', 'split_data', '000000.txt'))
+        case 'convert':
+            # Importing prior export from JSON (JR)
+            print('Importing prior export')
+            parser.import_json_all(timestamp='20221205_192223')
 
-    elif mode == 'parse_batch':
-        # Untested
-        # delayed_fns = [delayed(parser.load_split(os.path.join(project_root, 'data', 'split_data')))]
-        # parallel_pool = Parallel(n_jobs=(cpu_count() - 1))
-        # parallel_pool(delayed_fns)
-
-        pool = Pool((cpu_count() - 1))
-        try:
-            results = [pool.apply(parser.load_split, args=(os.path.join(project_root, 'data', 'split_data', f),)) for f in os.listdir(os.path.join(project_root, 'data', 'split_data'))]
-        finally:
-            pool.close()
-
-
-    elif mode == 'parse_async_apply':
-        print('Parsing source data file via apply_async.')
-        async_parser = ParseAsync()
-        async_parser.parse_async_apply([os.path.join(project_root, 'data', 'split_data', f) for f in os.listdir(os.path.join(project_root, 'data', 'split_data'))])
-
-    elif mode == 'parse_async_map':
-        print('Parsing source data file.')
-        async_parser = ParseAsync()
-        async_parser.parse_async_map([os.path.join(project_root, 'data', 'split_data', f) for f in os.listdir(os.path.join(project_root, 'data', 'split_data'))])
-    
-    elif mode == 'merge':
-        for ds in parser.export_vars:
-            print('Collating and exporting %(ds)s data.' % {'ds': ds})
-            parser.merge(timestamp='20221205_222022', subset=ds)
-
-    elif mode == 'convert':
-        # Importing prior export from JSON (JR)
-        print('importing prior export')
-        parser.import_json_all(timestamp='20221205_192223')
-
-        print('exporting as Neo4j db components for "neo4j-admin import database"')
-        parser.export_neo4j_db_csv()
-
-    elif mode == 'split':
-        parser.split_file(filename=os.path.join(project_root, 'data', 'amazon-meta.txt'))
-
-    elif mode == 'upload':
-        # Testing sending over the full dataset after extraction instead of inline (may incur additional overhead, need to test) (JR)
-        # Moved dict iteration into separate function in N4J to capture performance stats
-        n4_loader = N4J()
-
-        # edges
-        adjset = parser.returnsimilar(dataset)
-
-        n4_loader.add_edges(adjset, 'IS_SIMILAR_TO')
-        n4_loader.close()
+            print('Exporting as Neo4j db components for "neo4j-admin import database"')
+            parser.export_neo4j_db_csv()
 
    
 if __name__ == "__main__":
     # Stage 1: Initial parsing and structuring of data (JR)
     #   Breaks up source file into topic-specific groups split into smaller file sizes (JR)
-    # Works; completes in ~8m36s
     main('split')
 
-    # Test
-    # main('parse_split_single')
-
-    # Works
-    # main('parse_batch')
-
     # Stage 2: Asynchronously parse structured files (JR)
-    # Works; completes in ~190s for just product nodes and edges
-    # ~3m47s for nodes/edges for products, categories, & reviews
-    # ~3m38s - same
-    # ~4m08s - same
     main('parse_async_apply')
 
     # Stage 3: Collate, merge, postprocessing, and summarization of data (JR)
     #   Also generates Customer node data derived from Review node data and provides deduplication (JR)
-    # ~21m52s for json dump of products, categories, reviews, & customer histories
-    # ~28m50s - same
     main('merge')
-
-    # Failing on cat1073, not seeing how to fix it
-    # main('parse_async_map')
