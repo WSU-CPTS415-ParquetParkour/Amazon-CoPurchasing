@@ -130,6 +130,9 @@ dmypy.json
 .pyre/
 
 # Project-specific exclusions
+# Excluding experimental files
+bin/opt/test*
+
 # Exclusing the source dataset(s) to keep the total repo size down
 data/amazon-meta*.txt
 data/*.csv
