@@ -25,11 +25,17 @@ config = cfg.ConfigParser()
 config.read(config_path)
 
 ui_path = os.path.join(project_root, 'ui')
-ui_file = os.path.join(ui_path, 'Mockup_UI_query_program.ui')
+ui_main_window = os.path.join(ui_path, 'Mockup_UI_query_program.ui')
 ui_qss  = os.path.join(project_root, 'etc', 'style.qss')
 
+Ui_MainWindow, QtBaseClass = uic.loadUiType(ui_main_window)
 
-class AcpApp(object):
+class AcpApp(QMainWindow):
+    def __init__(self):
+        super(AcpApp, self).__init__()
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
@@ -102,37 +108,12 @@ class AcpApp(object):
     # retranslateUi
 
 
-    def __init__(self):
-        super(AcpApp, self).__init__()
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
-
-# class Window(QMainWindow, Ui_MainWindow):
-#     def __init__(self, parent=None):
-#         super(Ui_MainWindow).__init__()
-#         self.ui = Ui_MainWindow()
-#         # self.setupUi(self)
-#         self.ui.setupUi(self)
-#         # self.connectSignalsSlots()
-
-# qtCreatorFile = "Mockup_UI_query_program.ui"#MY ADDITION
-# Ui_MainWindow, QtBaseClass = uic.loadUiType(ui_file)
-
-# def main():
-#     app = QApplication(sys.argv)
-#     win = Window()
-#     win.show()
- 
-# if __name__ == "__main__":
-#     main()
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MS03()
+    window = AcpApp()
     window.show()
 
-    with open(qss, 'r') as f:
+    with open(ui_qss, 'r') as f:
         style = f.read()
         app.setStyleSheet(style)
 
