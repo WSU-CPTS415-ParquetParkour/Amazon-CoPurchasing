@@ -93,6 +93,11 @@ class N4J:
             result = session.execute_read(self._get_num_reviews,ASIN)
         return result
 
+    def get_collab_filt_wt_adj_mtx(self):
+        with self.driver.session() as session:
+            result = session.execute_read(self._get_collab_filt_wt_adj_mtx)
+        return result
+
 
     @staticmethod
     def _get_acp_n4_edge_types(transaction):
@@ -235,7 +240,20 @@ class N4J:
             logging.error('{query} raised an error: \n {exception}'.format(query=cypher, exception=exception))
             raise
 
+    @staticmethod
+    def _get_collab_filt_wt_adj_mtx(transaction):
+        cypher = 'MATCH (a:REVIEW)<-[:REVIEWED_BY]-(b) RETURN a.customer AS cust_id, b.ASIN as asin, a.rating AS rating LIMIT 50;'
+        result = transaction.run(cypher)
 
+        try:
+            return [{
+                'cust_id': row['cust_id'],
+                'asin': row['asin'],
+                'rating': row['rating']
+            } for row in result]
+        except ServiceUnavailable as exception:
+            logging.error('{query} raised an error: \n {exception}'.format(query=cypher, exception=exception))
+            raise
 
 
 
@@ -249,13 +267,13 @@ class N4J:
 #TODO: Just for temporary testing, will need to be removed when ready to be sourced by other files (JR)
 def main():
     n4 = N4J()
-    # nodes = ['CATEGORY', 'CUSTOMER', 'PRODUCT', 'REVIEW']
+    nodes = ['CATEGORY', 'CUSTOMER', 'PRODUCT', 'REVIEW']
 
     try:
         node_set = n4.get_rating_greater(rating='4',operand='>')
-        # properties = {lbl: n4.get_node_properties(lbl) for lbl in nodes}
+        properties = {lbl: n4.get_node_properties(lbl) for lbl in nodes}
         # with open(os.path.join(project_root, 'etc', 'node_property_keys.json'), 'w', 1, 'utf-8') as f: json.dump(properties, f)
-
+        wtd_mtx = n4.get_collab_filt_wt_adj_mtx()
     finally:
         n4.close()
 
