@@ -43,8 +43,8 @@ class AcpApp(QMainWindow):
         self.loadList()
         self.ui.listWidget.itemClicked.connect(self.Clicked1)
         self.ui.listWidget_2.itemClicked.connect(self.Clicked2)
-        # self.ui.listWidget_3.itemClicked.connect(self.Clicked3)
-
+        self.ui.listWidget_3.itemClicked.connect(self.Clicked3)
+        self.ui.pushButton.clicked.connect(self.Clicked4)
 
     def loadList(self):
                 self.ui.listWidget.clear()
@@ -52,7 +52,11 @@ class AcpApp(QMainWindow):
                 self.ui.listWidget.addItem('CATEGORY')
                 self.ui.listWidget.addItem('CUSTOMER')
                 self.ui.listWidget.addItem('REVIEW')
-                
+                self.ui.listWidget_3.addItem('<')
+                self.ui.listWidget_3.addItem('<=')
+                self.ui.listWidget_3.addItem('=')
+                self.ui.listWidget_3.addItem('>=')
+                self.ui.listWidget_3.addItem('>')                
             
                 
 
@@ -70,7 +74,6 @@ class AcpApp(QMainWindow):
                 # self.ui.stateList_2.setCurrentIndex(-1)
                 # self.ui.stateList_2.clearEditText()
 
-
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
@@ -84,66 +87,46 @@ class AcpApp(QMainWindow):
 
         self.gridLayout.addWidget(self.listWidget, 1, 0, 1, 4)
 
-        self.pushButton = QPushButton(self.centralwidget)
-        self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setMouseTracking(False)
-
-        self.gridLayout.addWidget(self.pushButton, 4, 2, 1, 1)
-
         self.label_3 = QLabel(self.centralwidget)
         self.label_3.setObjectName(u"label_3")
 
-        self.gridLayout.addWidget(self.label_3, 1, 5, 1, 1)
-
-        self.radioButton = QRadioButton(self.centralwidget)
-        self.radioButton.setObjectName(u"radioButton")
-
-        self.gridLayout.addWidget(self.radioButton, 2, 1, 1, 1)
-
-        self.radioButton_5 = QRadioButton(self.centralwidget)
-        self.radioButton_5.setObjectName(u"radioButton_5")
-
-        self.gridLayout.addWidget(self.radioButton_5, 2, 4, 1, 1)
-
-        self.radioButton_4 = QRadioButton(self.centralwidget)
-        self.radioButton_4.setObjectName(u"radioButton_4")
-
-        self.gridLayout.addWidget(self.radioButton_4, 2, 0, 1, 1)
+        self.gridLayout.addWidget(self.label_3, 1, 4, 1, 1)
 
         self.textEdit = QTextEdit(self.centralwidget)
         self.textEdit.setObjectName(u"textEdit")
 
-        self.gridLayout.addWidget(self.textEdit, 3, 0, 2, 2)
+        self.gridLayout.addWidget(self.textEdit, 2, 0, 2, 2)
 
         self.tableWidget = QTableWidget(self.centralwidget)
         self.tableWidget.setObjectName(u"tableWidget")
 
-        self.gridLayout.addWidget(self.tableWidget, 5, 0, 1, 8)
+        self.gridLayout.addWidget(self.tableWidget, 4, 0, 1, 7)
 
         self.listWidget_2 = QListWidget(self.centralwidget)
         self.listWidget_2.setObjectName(u"listWidget_2")
 
-        self.gridLayout.addWidget(self.listWidget_2, 1, 6, 1, 1)
-
-        self.radioButton_3 = QRadioButton(self.centralwidget)
-        self.radioButton_3.setObjectName(u"radioButton_3")
-
-        self.gridLayout.addWidget(self.radioButton_3, 2, 3, 1, 1)
-
-        self.label_2 = QLabel(self.centralwidget)
-        self.label_2.setObjectName(u"label_2")
-
-        self.gridLayout.addWidget(self.label_2, 3, 2, 1, 1)
-
-        self.radioButton_2 = QRadioButton(self.centralwidget)
-        self.radioButton_2.setObjectName(u"radioButton_2")
-
-        self.gridLayout.addWidget(self.radioButton_2, 2, 2, 1, 1)
+        self.gridLayout.addWidget(self.listWidget_2, 1, 5, 1, 1)
 
         self.label = QLabel(self.centralwidget)
         self.label.setObjectName(u"label")
 
         self.gridLayout.addWidget(self.label, 0, 0, 1, 2)
+
+        self.listWidget_3 = QListWidget(self.centralwidget)
+        self.listWidget_3.setObjectName(u"listWidget_3")
+
+        self.gridLayout.addWidget(self.listWidget_3, 2, 5, 1, 1)
+
+        self.label_2 = QLabel(self.centralwidget)
+        self.label_2.setObjectName(u"label_2")
+
+        self.gridLayout.addWidget(self.label_2, 2, 3, 1, 1)
+
+        self.pushButton = QPushButton(self.centralwidget)
+        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setMouseTracking(False)
+
+        self.gridLayout.addWidget(self.pushButton, 3, 3, 1, 1)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
@@ -161,20 +144,14 @@ class AcpApp(QMainWindow):
         self.retranslateUi(MainWindow)
 
         QMetaObject.connectSlotsByName(MainWindow)
-        
     # setupUi
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Go!", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"->", None))
-        self.radioButton.setText(QCoreApplication.translate("MainWindow", u">=", None))
-        self.radioButton_5.setText(QCoreApplication.translate("MainWindow", u"=", None))
-        self.radioButton_4.setText(QCoreApplication.translate("MainWindow", u">", None))
-        self.radioButton_3.setText(QCoreApplication.translate("MainWindow", u"<=", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Add condition", None))
-        self.radioButton_2.setText(QCoreApplication.translate("MainWindow", u"<", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Enter a query below", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Add condition", None))
+        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Go!", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
     # retranslateUi
 
@@ -193,9 +170,14 @@ class AcpApp(QMainWindow):
         for it in listofitems:
             self.ui.listWidget_2.addItem(it)
 
-
     def Clicked2(self,item):
-	    QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
+        category_item = item.text()
+
+    def Clicked3(self,item):
+	    condition = item
+
+    def Clicked4(self):
+        numeric_val = self.ui.textEdit.toPlainText()
 
     # def Clicked3(self,item):
 	#     QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
