@@ -8,7 +8,7 @@ import decimal
 from PyQt5 import uic, QtCore, QtWidgets
 from PyQt5.QtCore import QRect, QCoreApplication, QMetaObject
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QWidget, QAction,
-                            QDialog, QMessageBox, QTableWidget, QTableWidgetItem,
+                            QDialog, QMessageBox, QTableWidget,QListWidget,QGridLayout, QTableWidgetItem,
                             QVBoxLayout, QPushButton, QLabel, QRadioButton, QTextEdit,
                             QMenuBar, QMenu, QStatusBar)
 from PyQt5.QtGui import QIcon, QPixmap, QTextCharFormat, QFont
@@ -35,6 +35,36 @@ class AcpApp(QMainWindow):
         super(AcpApp, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.loadList()
+        
+
+
+    def loadList(self):
+                self.ui.listWidget.clear()
+                self.ui.listWidget.addItem('product')
+                self.ui.listWidget.addItem('category')
+                self.ui.listWidget.addItem('customer')
+                self.ui.listWidget.addItem('review')
+                self.ui.listWidget.itemClicked.connect(self.Clicked1)
+                self.ui.listWidget_2.itemClicked.connect(self.Clicked2)
+                self.ui.listWidget_3.itemClicked.connect(self.Clicked3)
+            
+                
+
+        #DEMO CODE NOT NECESSARY FOR NOW
+                # try:
+                #     results = self.executeQuery(sql_str)
+                #     #print(results)
+                #     for row in results:
+                #         self.ui.listWidget.addItem(row[0])
+                #         self.ui.stateList_2.addItem(row[0])
+                # except:
+                #     print("Query failed!")
+                # self.ui.listWidget.setCurrentIndex(0)
+                # self.ui.listWidget.clearEditText()
+                # self.ui.stateList_2.setCurrentIndex(-1)
+                # self.ui.stateList_2.clearEditText()
+
 
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
@@ -42,40 +72,84 @@ class AcpApp(QMainWindow):
         MainWindow.resize(1039, 805)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
-        self.radioButton = QRadioButton(self.centralwidget)
-        self.radioButton.setObjectName(u"radioButton")
-        self.radioButton.setGeometry(QRect(340, 230, 89, 20))
-        self.radioButton_2 = QRadioButton(self.centralwidget)
-        self.radioButton_2.setObjectName(u"radioButton_2")
-        self.radioButton_2.setGeometry(QRect(390, 230, 89, 20))
-        self.radioButton_3 = QRadioButton(self.centralwidget)
-        self.radioButton_3.setObjectName(u"radioButton_3")
-        self.radioButton_3.setGeometry(QRect(430, 230, 89, 20))
-        self.radioButton_4 = QRadioButton(self.centralwidget)
-        self.radioButton_4.setObjectName(u"radioButton_4")
-        self.radioButton_4.setGeometry(QRect(300, 230, 89, 20))
-        self.radioButton_5 = QRadioButton(self.centralwidget)
-        self.radioButton_5.setObjectName(u"radioButton_5")
-        self.radioButton_5.setGeometry(QRect(480, 230, 89, 20))
-        self.textEdit = QTextEdit(self.centralwidget)
-        self.textEdit.setObjectName(u"textEdit")
-        self.textEdit.setGeometry(QRect(300, 150, 241, 71))
-        self.textEdit_2 = QTextEdit(self.centralwidget)
-        self.textEdit_2.setObjectName(u"textEdit_2")
-        self.textEdit_2.setGeometry(QRect(300, 260, 241, 41))
-        self.label = QLabel(self.centralwidget)
-        self.label.setObjectName(u"label")
-        self.label.setGeometry(QRect(300, 130, 111, 16))
-        self.label_2 = QLabel(self.centralwidget)
-        self.label_2.setObjectName(u"label_2")
-        self.label_2.setGeometry(QRect(560, 230, 81, 16))
+        self.gridLayout = QGridLayout(self.centralwidget)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.listWidget = QListWidget(self.centralwidget)
+        self.listWidget.setObjectName(u"listWidget")
+
+        self.gridLayout.addWidget(self.listWidget, 1, 0, 1, 4)
+
         self.pushButton = QPushButton(self.centralwidget)
         self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setGeometry(QRect(300, 320, 241, 41))
         self.pushButton.setMouseTracking(False)
-        self.textEdit_3 = QTextEdit(self.centralwidget)
-        self.textEdit_3.setObjectName(u"textEdit_3")
-        self.textEdit_3.setGeometry(QRect(30, 430, 981, 331))
+
+        self.gridLayout.addWidget(self.pushButton, 4, 2, 1, 1)
+
+        self.label_3 = QLabel(self.centralwidget)
+        self.label_3.setObjectName(u"label_3")
+
+        self.gridLayout.addWidget(self.label_3, 1, 5, 1, 1)
+
+        self.radioButton = QRadioButton(self.centralwidget)
+        self.radioButton.setObjectName(u"radioButton")
+
+        self.gridLayout.addWidget(self.radioButton, 2, 1, 1, 1)
+
+        self.radioButton_5 = QRadioButton(self.centralwidget)
+        self.radioButton_5.setObjectName(u"radioButton_5")
+
+        self.gridLayout.addWidget(self.radioButton_5, 2, 4, 1, 1)
+
+        self.radioButton_4 = QRadioButton(self.centralwidget)
+        self.radioButton_4.setObjectName(u"radioButton_4")
+
+        self.gridLayout.addWidget(self.radioButton_4, 2, 0, 1, 1)
+
+        self.textEdit = QTextEdit(self.centralwidget)
+        self.textEdit.setObjectName(u"textEdit")
+
+        self.gridLayout.addWidget(self.textEdit, 3, 0, 2, 2)
+
+        self.tableWidget = QTableWidget(self.centralwidget)
+        self.tableWidget.setObjectName(u"tableWidget")
+
+        self.gridLayout.addWidget(self.tableWidget, 5, 0, 1, 9)
+
+        self.listWidget_2 = QListWidget(self.centralwidget)
+        self.listWidget_2.setObjectName(u"listWidget_2")
+
+        self.gridLayout.addWidget(self.listWidget_2, 1, 6, 1, 1)
+
+        self.radioButton_3 = QRadioButton(self.centralwidget)
+        self.radioButton_3.setObjectName(u"radioButton_3")
+
+        self.gridLayout.addWidget(self.radioButton_3, 2, 3, 1, 1)
+
+        self.label_2 = QLabel(self.centralwidget)
+        self.label_2.setObjectName(u"label_2")
+
+        self.gridLayout.addWidget(self.label_2, 3, 2, 1, 1)
+
+        self.label_4 = QLabel(self.centralwidget)
+        self.label_4.setObjectName(u"label_4")
+
+        self.gridLayout.addWidget(self.label_4, 1, 7, 1, 1)
+
+        self.listWidget_3 = QListWidget(self.centralwidget)
+        self.listWidget_3.setObjectName(u"listWidget_3")
+
+        self.gridLayout.addWidget(self.listWidget_3, 1, 8, 1, 1)
+
+        self.label = QLabel(self.centralwidget)
+        self.label.setObjectName(u"label")
+
+        self.gridLayout.addWidget(self.label, 0, 0, 1, 2)
+
+        self.radioButton_2 = QRadioButton(self.centralwidget)
+        self.radioButton_2.setObjectName(u"radioButton_2")
+
+        self.gridLayout.addWidget(self.radioButton_2, 2, 2, 1, 1)
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -92,6 +166,7 @@ class AcpApp(QMainWindow):
         self.retranslateUi(MainWindow)
 
         QMetaObject.connectSlotsByName(MainWindow)
+        
     # setupUi
 
     def retranslateUi(self, MainWindow):
@@ -106,6 +181,18 @@ class AcpApp(QMainWindow):
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Go!", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
     # retranslateUi
+
+    def Clicked1(self,item):
+	    QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
+        
+    def Clicked2(self,item):
+	    QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
+
+    def Clicked3(self,item):
+	    QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
+
+    #def populate_List_2(self,MainWindow):
+        
 
 
 if __name__ == "__main__":
