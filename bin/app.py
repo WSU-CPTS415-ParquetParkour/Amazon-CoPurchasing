@@ -6,6 +6,7 @@ import re
 import configparser as cfg
 import decimal
 import json
+import random as rnd
 from PyQt5 import uic, QtCore, QtWidgets
 from PyQt5.QtCore import QRect, QCoreApplication, QMetaObject
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QWidget, QAction,
@@ -21,6 +22,8 @@ config_path = os.path.join(project_root, 'etc', 'config.ini')
 sys.path.insert(0, os.path.join(project_root, 'lib'))
 
 from acpN4J import N4J
+from acpAlgos import CollaborativeFilter
+
 category_path = os.path.join(project_root,'etc','node_property_keys.json')
 x=open(category_path)
 dict_of_cats = json.load(x)
@@ -45,6 +48,9 @@ class AcpApp(QMainWindow):
         self.ui.listWidget_2.itemClicked.connect(self.Clicked2)
         self.ui.listWidget_3.itemClicked.connect(self.Clicked3)
         self.ui.pushButton.clicked.connect(self.Clicked4)
+        self.ui.btn_gen_cf_recs.clicked.connect(self.btn_gen_cf_recs_clicked)
+        self.products = dict()
+        self.n4 = N4J()
 
     def loadList(self):
                 self.ui.listWidget.clear()
@@ -193,13 +199,27 @@ class AcpApp(QMainWindow):
         global numeric_val
         numeric_val = self.ui.textEdit.toPlainText()
       
-        l =N4J.get_rating_greater(n,rating=numeric_val,operand=condition)
-        l = str(l)
-        self.ui.textEdit_2.append(l)
+        self.products = n.get_rating_greater(rating=numeric_val,operand=condition)
+        self.ui.textEdit_2.append(str(self.products))
     # def Clicked3(self,item):
 	#     QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
 
     #def populate_List_2(self,MainWindow):
+
+    def btn_gen_cf_recs_clicked(self):
+        self.ui.lst_cf_recs.clear()
+
+        wtd_mtx = self.n4.get_cf_set_from_asins(list(set(x['asin'] for x in self.products)))
+        cid = rnd.sample(list(wtd_mtx.columns.values), 1)[0]
+
+        cf = CollaborativeFilter(wtd_mtx, cid)
+        recs = cf.recommend_product(cid, 5)
+        rec_titles = self.n4.get_titles_from_asins(recs)
+
+        for row in rec_titles:
+            self.ui.lst_cf_recs.addItem(row)
+
+        return
        
 
 

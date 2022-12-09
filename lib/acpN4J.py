@@ -2,6 +2,8 @@ import os
 import re
 import logging
 import configparser as cfg
+import pandas as pd
+import numpy as np
 from neo4j import GraphDatabase as gdb
 from neo4j.exceptions import ServiceUnavailable
 
@@ -159,6 +161,11 @@ class N4J:
             result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id').replace(np.nan, 0)
         return result
 
+    def get_titles_from_asins(self, asins):
+        with self.driver.session() as session:
+            result = session.execute_read(self._get_titles_from_asins, asins)
+        return result
+
 
     @staticmethod
     def _add_indices(transaction):
@@ -239,7 +246,7 @@ class N4J:
     def _get_rating_greater(transaction, rating, operand, limit=50):
         # Specify unique node id instead of letting neo4j define it - find out what the limitations of this are
         cypher = ' '.join([
-            'MATCH (n:PRODUCT) WHERE n.review_rating_avg %(operand)s %(rating)s RETURN n.title AS title ORDER BY n DESC LIMIT 50;'%{'operand':operand,'rating':rating}
+            'MATCH (n:PRODUCT) WHERE n.review_rating_avg %(operand)s %(rating)s RETURN n.ASIN AS asin, n.title AS title ORDER BY n DESC LIMIT %(lim)s;'%{'operand':operand,'rating':rating, 'lim': limit}
             ])
         # print(cypher)
         result = transaction.run(cypher)
@@ -494,6 +501,17 @@ class N4J:
                 'asin': row['asin'],
                 'rating': row['rating']
             } for row in result]
+        except ServiceUnavailable as exception:
+            logging.error('{query} raised an error: \n {exception}'.format(query=cypher, exception=exception))
+            raise
+    
+    @staticmethod
+    def _get_titles_from_asins(transaction, asins):
+        cypher = 'MATCH (a:PRODUCT) WHERE a.ASIN IN [%(al)s] RETURN a.title AS title' % {'al': '\'' + '\',\''.join(asins) + '\''}
+        result = transaction.run(cypher)
+
+        try:
+            return [row['title'] for row in result]
         except ServiceUnavailable as exception:
             logging.error('{query} raised an error: \n {exception}'.format(query=cypher, exception=exception))
             raise
