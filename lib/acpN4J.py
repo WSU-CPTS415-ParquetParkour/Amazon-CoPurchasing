@@ -70,6 +70,21 @@ class N4J:
     def get_edge_types(self):
         with self.driver.session() as session:
             result = session.execute_read(self._get_acp_n4_edge_types)
+        result = list(set(row['rel_type'] for row in result))
+        return result
+
+    def get_node_properties(self, node_label):
+        with self.driver.session() as session:
+            result = session.execute_read(self._get_node_properties, node_label.upper())
+
+        result = list(set(prop for row in result for y,prop_lst in row[node_label].items() for prop in prop_lst if prop != 'Id'))
+        return result
+    
+    def get_edge_properties(self, edge_type):
+        with self.driver.session() as session:
+            result = session.execute_read(self._get_edge_properties, edge_type.upper())
+
+        result = list(set(prop for row in result for y,prop_lst in row[node_label].items() for prop in prop_lst if prop != 'Id'))
         return result
 
     @staticmethod
@@ -126,6 +141,33 @@ class N4J:
         result = transaction.run(cypher)
         return
 
+    @staticmethod
+    def _get_node_properties(transaction, node_label):
+        cypher = 'MATCH (n:%(nl)s) RETURN KEYS(n) AS property_keys LIMIT 50;' % {'nl': node_label}
+        result = transaction.run(cypher)
+        try:
+            return [{node_label: {
+                    'properties': row['property_keys'],
+                }
+            } for row in result]
+        except ServiceUnavailable as exception:
+            logging.error('{query} raised an error: \n {exception}'.format(query=cypher, exception=exception))
+            raise
+
+    @staticmethod
+    def _get_edge_properties(transaction, edge_type):
+        cypher = 'MATCH ()-[r:%(et)s]->() RETURN KEYS(r) AS property_keys LIMIT 50;' % {'et': edge_type}
+        result = transaction.run(cypher)
+        try:
+            return [{edge_type: {
+                    'properties': row['property_keys'],
+                }
+            } for row in result]
+        except ServiceUnavailable as exception:
+            logging.error('{query} raised an error: \n {exception}'.format(query=cypher, exception=exception))
+            raise
+
+
 
 #TODO: Just for temporary testing, will need to be removed when ready to be sourced by other files (JR)
 def main():
@@ -133,6 +175,8 @@ def main():
 
     try:
         edge_types = n4.get_edge_types()
+        node_properties = n4.get_node_properties('CUSTOMER')
+        edge_properties = n4.get_node_properties('IS_SIMILAR_TO')
     finally:
         n4.close()
 
