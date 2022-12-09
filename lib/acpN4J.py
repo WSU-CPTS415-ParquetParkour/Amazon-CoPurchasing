@@ -5,6 +5,7 @@ import re
 import logging
 import configparser as cfg
 import pandas as pd
+import numpy as np
 from neo4j import GraphDatabase as gdb
 from neo4j.exceptions import ServiceUnavailable
 
