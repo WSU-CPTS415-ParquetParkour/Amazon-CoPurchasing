@@ -410,7 +410,7 @@ class Parser:
                 'product'   : '\t'.join([':START_ID(asin_id)', ':END_ID(asin_id)', ':TYPE']),
                 'category'  : '\t'.join([':START_ID(asin_id)', ':END_ID(cat_id)', ':TYPE']),
                 'review'    : '\t'.join([':START_ID(asin_id)', ':END_ID(rev_id)', ':TYPE']),
-                'customer'  : '\t'.join([':START_ID(asin_id)', ':END_ID(rev_id)', ':TYPE'])
+                'customer'  : '\t'.join([':START_ID(cust_id)', ':END_ID(rev_id)', ':TYPE'])
             },
             'summary': {
                 'product'   : '\t'.join(['review_ct:int', 'review_ct_avg:float', 'review_ct_sd:float', ':LABEL']),
