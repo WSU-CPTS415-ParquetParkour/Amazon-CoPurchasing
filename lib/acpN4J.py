@@ -1,11 +1,7 @@
-#! /usr/bin/python3
-
 import os
 import re
 import logging
 import configparser as cfg
-import pandas as pd
-import numpy as np
 from neo4j import GraphDatabase as gdb
 from neo4j.exceptions import ServiceUnavailable
 
@@ -98,7 +94,6 @@ class N4J:
     def get_collab_filt_wt_adj_mtx(self):
         with self.driver.session() as session:
             result = session.execute_read(self._get_collab_filt_wt_adj_mtx)
-            result = pd.pivot_table(pd.DataFrame(result), values='rating', index='cust_id', columns='asin').replace(np.nan, 0)
         return result
 
 
@@ -165,7 +160,7 @@ class N4J:
     def _get_rating_greater(transaction,rating,operand):
         # Specify unique node id instead of letting neo4j define it - find out what the limitations of this are
         cypher = ' '.join([
-            'MATCH (n:PRODUCT) WHERE n.review_rating_avg '+operand+' '+rating+' RETURN n.title AS title ORDER BY n DESC LIMIT 50;'
+            'MATCH (n:PRODUCT) WHERE n.review_rating_avg %(operand)s %(rating)s RETURN n.title AS title ORDER BY n DESC LIMIT 50;'%{'operand':operand,'rating':rating}
             ])
         print(cypher)
         result = transaction.run(cypher)
