@@ -4,7 +4,7 @@ import os
 import re
 import configparser as cfg
 from neo4j import GraphDatabase as gdb
-from neo4j.exceptions import ServiceUnavailable
+from neo4j.exceptions import ServiceUnavailable, DatabaseError
 
 project_root = re.sub('(?<=Amazon-CoPurchasing).*', '', os.path.abspath('.'))
 config_path = os.path.join(project_root, 'etc', 'config.ini')
@@ -172,11 +172,15 @@ class N4J:
 #TODO: Just for temporary testing, will need to be removed when ready to be sourced by other files (JR)
 def main():
     n4 = N4J()
+    nodes = ['CATEGORY', 'CUSTOMER', 'PRODUCT', 'REVIEW']
 
     try:
         edge_types = n4.get_edge_types()
         node_properties = n4.get_node_properties('CUSTOMER')
         edge_properties = n4.get_node_properties('IS_SIMILAR_TO')
+
+        properties = {lbl: n4.get_node_properties(lbl) for lbl in nodes}
+
     finally:
         n4.close()
 
