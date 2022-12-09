@@ -5,6 +5,7 @@ import sys
 import re
 import configparser as cfg
 import decimal
+import json
 from PyQt5 import uic, QtCore, QtWidgets
 from PyQt5.QtCore import QRect, QCoreApplication, QMetaObject
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QWidget, QAction,
@@ -20,6 +21,10 @@ config_path = os.path.join(project_root, 'etc', 'config.ini')
 sys.path.insert(0, os.path.join(project_root, 'lib'))
 
 from acpN4J import N4J
+category_path = os.path.join(project_root,'etc','node_property_keys.json')
+x=open(category_path)
+dict_of_cats = json.load(x)
+print(dict_of_cats)
 
 config = cfg.ConfigParser()
 config.read(config_path)
@@ -36,18 +41,18 @@ class AcpApp(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.loadList()
-        
+        self.ui.listWidget.itemClicked.connect(self.Clicked1)
+        self.ui.listWidget_2.itemClicked.connect(self.Clicked2)
+        self.ui.listWidget_3.itemClicked.connect(self.Clicked3)
 
 
     def loadList(self):
                 self.ui.listWidget.clear()
-                self.ui.listWidget.addItem('product')
-                self.ui.listWidget.addItem('category')
-                self.ui.listWidget.addItem('customer')
-                self.ui.listWidget.addItem('review')
-                self.ui.listWidget.itemClicked.connect(self.Clicked1)
-                self.ui.listWidget_2.itemClicked.connect(self.Clicked2)
-                self.ui.listWidget_3.itemClicked.connect(self.Clicked3)
+                self.ui.listWidget.addItem('PRODUCT')
+                self.ui.listWidget.addItem('CATEGORY')
+                self.ui.listWidget.addItem('CUSTOMER')
+                self.ui.listWidget.addItem('REVIEW')
+                
             
                 
 
@@ -183,13 +188,26 @@ class AcpApp(QMainWindow):
     # retranslateUi
 
     def Clicked1(self,item):
-	    QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
+        listofitems=[]
+        self.ui.listWidget_2.clear()
+        if (item.text() == 'CUSTOMER'):
+            listofitems = [z for x,y in dict_of_cats.items() if x == 'CUSTOMER' for z in y]
+        if (item.text() == 'CATEGORY'):
+            listofitems = [z for x,y in dict_of_cats.items() if x == 'CATEGORY' for z in y] 
+        if (item.text() == 'PRODUCT'):
+            listofitems = [z for x,y in dict_of_cats.items() if x == 'PRODUCT' for z in y]          
+        if (item.text() == 'REVIEW'):
+            listofitems = [z for x,y in dict_of_cats.items() if x == 'REVIEW' for z in y]          
         
+        for it in listofitems:
+            self.ui.listWidget_2.addItem(it)
+
+
     def Clicked2(self,item):
 	    QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
 
-    def Clicked3(self,item):
-	    QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
+    # def Clicked3(self,item):
+	#     QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
 
     #def populate_List_2(self,MainWindow):
         
