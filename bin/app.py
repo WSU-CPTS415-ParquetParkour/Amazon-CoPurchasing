@@ -43,7 +43,7 @@ class AcpApp(QMainWindow):
         self.loadList()
         self.ui.listWidget.itemClicked.connect(self.Clicked1)
         self.ui.listWidget_2.itemClicked.connect(self.Clicked2)
-        self.ui.listWidget_3.itemClicked.connect(self.Clicked3)
+        # self.ui.listWidget_3.itemClicked.connect(self.Clicked3)
 
 
     def loadList(self):
@@ -118,7 +118,7 @@ class AcpApp(QMainWindow):
         self.tableWidget = QTableWidget(self.centralwidget)
         self.tableWidget.setObjectName(u"tableWidget")
 
-        self.gridLayout.addWidget(self.tableWidget, 5, 0, 1, 9)
+        self.gridLayout.addWidget(self.tableWidget, 5, 0, 1, 8)
 
         self.listWidget_2 = QListWidget(self.centralwidget)
         self.listWidget_2.setObjectName(u"listWidget_2")
@@ -135,25 +135,15 @@ class AcpApp(QMainWindow):
 
         self.gridLayout.addWidget(self.label_2, 3, 2, 1, 1)
 
-        self.label_4 = QLabel(self.centralwidget)
-        self.label_4.setObjectName(u"label_4")
+        self.radioButton_2 = QRadioButton(self.centralwidget)
+        self.radioButton_2.setObjectName(u"radioButton_2")
 
-        self.gridLayout.addWidget(self.label_4, 1, 7, 1, 1)
-
-        self.listWidget_3 = QListWidget(self.centralwidget)
-        self.listWidget_3.setObjectName(u"listWidget_3")
-
-        self.gridLayout.addWidget(self.listWidget_3, 1, 8, 1, 1)
+        self.gridLayout.addWidget(self.radioButton_2, 2, 2, 1, 1)
 
         self.label = QLabel(self.centralwidget)
         self.label.setObjectName(u"label")
 
         self.gridLayout.addWidget(self.label, 0, 0, 1, 2)
-
-        self.radioButton_2 = QRadioButton(self.centralwidget)
-        self.radioButton_2.setObjectName(u"radioButton_2")
-
-        self.gridLayout.addWidget(self.radioButton_2, 2, 2, 1, 1)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
@@ -176,14 +166,15 @@ class AcpApp(QMainWindow):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.radioButton.setText(QCoreApplication.translate("MainWindow", u">=", None))
-        self.radioButton_2.setText(QCoreApplication.translate("MainWindow", u"<", None))
-        self.radioButton_3.setText(QCoreApplication.translate("MainWindow", u"<=", None))
-        self.radioButton_4.setText(QCoreApplication.translate("MainWindow", u">", None))
-        self.radioButton_5.setText(QCoreApplication.translate("MainWindow", u"=", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Enter a query below", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Add condition", None))
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Go!", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"->", None))
+        self.radioButton.setText(QCoreApplication.translate("MainWindow", u">=", None))
+        self.radioButton_5.setText(QCoreApplication.translate("MainWindow", u"=", None))
+        self.radioButton_4.setText(QCoreApplication.translate("MainWindow", u">", None))
+        self.radioButton_3.setText(QCoreApplication.translate("MainWindow", u"<=", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Add condition", None))
+        self.radioButton_2.setText(QCoreApplication.translate("MainWindow", u"<", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Enter a query below", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
     # retranslateUi
 
