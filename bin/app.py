@@ -24,7 +24,6 @@ from acpN4J import N4J
 category_path = os.path.join(project_root,'etc','node_property_keys.json')
 x=open(category_path)
 dict_of_cats = json.load(x)
-print(dict_of_cats)
 
 config = cfg.ConfigParser()
 config.read(config_path)
@@ -36,6 +35,7 @@ ui_qss  = os.path.join(project_root, 'etc', 'style.qss')
 Ui_MainWindow, QtBaseClass = uic.loadUiType(ui_main_window)
 
 class AcpApp(QMainWindow):
+  
     def __init__(self):
         super(AcpApp, self).__init__()
         self.ui = Ui_MainWindow()
@@ -82,51 +82,51 @@ class AcpApp(QMainWindow):
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout = QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName(u"gridLayout")
+        self.label = QLabel(self.centralwidget)
+        self.label.setObjectName(u"label")
+
+        self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
+
         self.listWidget = QListWidget(self.centralwidget)
         self.listWidget.setObjectName(u"listWidget")
 
-        self.gridLayout.addWidget(self.listWidget, 1, 0, 1, 4)
+        self.gridLayout.addWidget(self.listWidget, 1, 0, 1, 1)
 
         self.label_3 = QLabel(self.centralwidget)
         self.label_3.setObjectName(u"label_3")
 
-        self.gridLayout.addWidget(self.label_3, 1, 4, 1, 1)
-
-        self.textEdit = QTextEdit(self.centralwidget)
-        self.textEdit.setObjectName(u"textEdit")
-
-        self.gridLayout.addWidget(self.textEdit, 2, 0, 2, 2)
-
-        self.tableWidget = QTableWidget(self.centralwidget)
-        self.tableWidget.setObjectName(u"tableWidget")
-
-        self.gridLayout.addWidget(self.tableWidget, 4, 0, 1, 7)
+        self.gridLayout.addWidget(self.label_3, 1, 2, 1, 1)
 
         self.listWidget_2 = QListWidget(self.centralwidget)
         self.listWidget_2.setObjectName(u"listWidget_2")
 
-        self.gridLayout.addWidget(self.listWidget_2, 1, 5, 1, 1)
+        self.gridLayout.addWidget(self.listWidget_2, 1, 3, 1, 1)
 
-        self.label = QLabel(self.centralwidget)
-        self.label.setObjectName(u"label")
+        self.textEdit = QTextEdit(self.centralwidget)
+        self.textEdit.setObjectName(u"textEdit")
 
-        self.gridLayout.addWidget(self.label, 0, 0, 1, 2)
-
-        self.listWidget_3 = QListWidget(self.centralwidget)
-        self.listWidget_3.setObjectName(u"listWidget_3")
-
-        self.gridLayout.addWidget(self.listWidget_3, 2, 5, 1, 1)
+        self.gridLayout.addWidget(self.textEdit, 2, 0, 1, 1)
 
         self.label_2 = QLabel(self.centralwidget)
         self.label_2.setObjectName(u"label_2")
 
-        self.gridLayout.addWidget(self.label_2, 2, 3, 1, 1)
+        self.gridLayout.addWidget(self.label_2, 2, 1, 1, 1)
+
+        self.listWidget_3 = QListWidget(self.centralwidget)
+        self.listWidget_3.setObjectName(u"listWidget_3")
+
+        self.gridLayout.addWidget(self.listWidget_3, 2, 3, 1, 1)
 
         self.pushButton = QPushButton(self.centralwidget)
         self.pushButton.setObjectName(u"pushButton")
         self.pushButton.setMouseTracking(False)
 
-        self.gridLayout.addWidget(self.pushButton, 3, 3, 1, 1)
+        self.gridLayout.addWidget(self.pushButton, 3, 1, 1, 2)
+
+        self.textEdit_2 = QTextEdit(self.centralwidget)
+        self.textEdit_2.setObjectName(u"textEdit_2")
+
+        self.gridLayout.addWidget(self.textEdit_2, 4, 0, 1, 4)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
@@ -148,12 +148,18 @@ class AcpApp(QMainWindow):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"->", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Enter a query below", None))
+        self.label_3.setText(QCoreApplication.translate("MainWindow", u"->", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Add condition", None))
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Go!", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
     # retranslateUi
+
+
+
+    category_item = ''
+    value_item = ''
+    condition = '' 
 
     def Clicked1(self,item):
         listofitems=[]
@@ -169,21 +175,32 @@ class AcpApp(QMainWindow):
         
         for it in listofitems:
             self.ui.listWidget_2.addItem(it)
-
-    def Clicked2(self,item):
+        global category_item
         category_item = item.text()
+        
+    def Clicked2(self,item):
+        global value_item
+        value_item = item.text()
 
     def Clicked3(self,item):
-	    condition = item
+        global condition
+        condition = item.text()
 
     def Clicked4(self):
-        numeric_val = self.ui.textEdit.toPlainText()
+        n=N4J()
+        self.ui.textEdit_2.clear()
 
+        global numeric_val
+        numeric_val = self.ui.textEdit.toPlainText()
+      
+        l =N4J.get_rating_greater(n,rating=numeric_val,operand=condition)
+        l = str(l)
+        self.ui.textEdit_2.append(l)
     # def Clicked3(self,item):
 	#     QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
 
     #def populate_List_2(self,MainWindow):
-        
+       
 
 
 if __name__ == "__main__":
