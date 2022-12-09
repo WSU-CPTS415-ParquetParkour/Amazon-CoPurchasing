@@ -4,6 +4,7 @@ import os
 import re
 import logging
 import configparser as cfg
+import pandas as pd
 from neo4j import GraphDatabase as gdb
 from neo4j.exceptions import ServiceUnavailable
 
@@ -96,6 +97,7 @@ class N4J:
     def get_collab_filt_wt_adj_mtx(self):
         with self.driver.session() as session:
             result = session.execute_read(self._get_collab_filt_wt_adj_mtx)
+            result = pd.pivot_table(pd.DataFrame(result), values='rating', index='cust_id', columns='asin').replace(np.nan, 0)
         return result
 
 
