@@ -103,7 +103,7 @@ class AcpApp(QMainWindow):
         self.ui.listWidget_2.clear()
         self.ui.textEdit.clear()
         # self.ui.textEdit_2.clear()
-        self.ui.lst_cf_recs.clear()
+        # self.ui.lst_cf_recs.clear()
         self.reset_query_results_table()
         self.reset_cf_results_table()
         
@@ -235,20 +235,30 @@ class AcpApp(QMainWindow):
         condition = item.text()
 
     def Clicked4(self):
-        n=N4J()
-        # self.ui.textEdit_2.clear()
+        try:
+            n=N4J()
+            # self.ui.textEdit_2.clear()
+            self.ui.listWidget.setEnabled(False)
+            self.ui.listWidget_2.setEnabled(False)
+            self.ui.listWidget_3.setEnabled(False)
+            self.ui.pushButton.setEnabled(False)
 
-        global numeric_val
-        numeric_val = self.ui.textEdit.toPlainText()
-      
-        self.products = n.get_rating_greater(rating=numeric_val,operand=condition)
-        # self.ui.textEdit_2.append(str(self.products.values))
+            global numeric_val
+            numeric_val = self.ui.textEdit.toPlainText()
+        
+            self.products = n.get_rating_greater(rating=numeric_val,operand=condition)
+            # self.ui.textEdit_2.append(str(self.products.values))
 
-        self.style_query_results_table(self.products.shape, list(self.products.columns))
+            self.style_query_results_table(self.products.shape, list(self.products.columns))
 
-        for row_idx in range(self.products.shape[0]):
-            for col_idx in range(0, self.products.shape[1]):
-                self.ui.tbl_query_results.setItem(row_idx, col_idx, QTableWidgetItem(str(self.products.values[row_idx, col_idx])))
+            for row_idx in range(self.products.shape[0]):
+                for col_idx in range(0, self.products.shape[1]):
+                    self.ui.tbl_query_results.setItem(row_idx, col_idx, QTableWidgetItem(str(self.products.values[row_idx, col_idx])))
+        finally:
+            self.ui.listWidget.setEnabled(True)
+            self.ui.listWidget_2.setEnabled(True)
+            self.ui.listWidget_3.setEnabled(True)
+            self.ui.pushButton.setEnabled(True)
 
     # def Clicked3(self,item):
 	#     QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
@@ -261,7 +271,7 @@ class AcpApp(QMainWindow):
         self.ui.listWidget_3.clearSelection()
         self.ui.textEdit.clear()
         # self.ui.textEdit_2.clear()
-        self.ui.lst_cf_recs.clear()
+        # self.ui.lst_cf_recs.clear()
         self.reset_query_results_table()
         self.reset_cf_results_table()
 
@@ -270,7 +280,7 @@ class AcpApp(QMainWindow):
         self.ui.listWidget_3.clearSelection()
         self.ui.textEdit.clear()
         # self.ui.textEdit_2.clear()
-        self.ui.lst_cf_recs.clear()
+        # self.ui.lst_cf_recs.clear()
         self.reset_query_results_table()
         self.reset_cf_results_table()
 
@@ -278,33 +288,42 @@ class AcpApp(QMainWindow):
         # Empty out downstream elements (JR)
         self.ui.textEdit.clear()
         # self.ui.textEdit_2.clear()
-        self.ui.lst_cf_recs.clear()
+        # self.ui.lst_cf_recs.clear()
         self.reset_query_results_table()
         self.reset_cf_results_table()
 
 
     def btn_gen_cf_recs_clicked(self):
         # Generate list of recommendations based on the subset returned to the UI (JR)
-        self.ui.lst_cf_recs.clear()
+        try:
+            self.ui.btn_gen_cf_recs.setEnabled(True)
+            self.ui.spb_cf_recs_n.setEnabled(True)
+            # self.ui.lst_cf_recs.clear()
 
-        if len(self.products) == 0:
-            self.ui.lst_cf_recs.addItem('No products to derive recommendations from.')
+            if len(self.products) == 0:
+                # self.ui.lst_cf_recs.addItem('No products to derive recommendations from.')
+                self.style_cf_results_table((1, 1), ['result', 'message'])
+                self.ui.tbl_cf_recs.setItem(0,0, QTableWidgetItem('Error'))
+                self.ui.tbl_cf_recs.setItem(0,0, QTableWidgetItem('No products to derive recommendations from.'))
+            
+            else:
+                wtd_mtx = self.n4.get_cf_set_from_asins(list(self.products['asin']))
+                cid = rnd.sample(list(wtd_mtx.columns.values), 1)[0]
+
+                cf = CollaborativeFilter(wtd_mtx, cid)
+                recs = cf.recommend_product(cid, 5)
+                rec_titles = self.n4.get_titles_from_asins(recs['asin'])
+
+                cf_recs = rec_titles.merge(recs, on='asin').sort_values('score', ascending=False)
+
+                self.style_cf_results_table(cf_recs.shape, cf_recs.columns)
         
-        else:
-            wtd_mtx = self.n4.get_cf_set_from_asins(list(self.products['asin']))
-            cid = rnd.sample(list(wtd_mtx.columns.values), 1)[0]
-
-            cf = CollaborativeFilter(wtd_mtx, cid)
-            recs = cf.recommend_product(cid, 5)
-            rec_titles = self.n4.get_titles_from_asins(recs['asin'])
-
-            cf_recs = rec_titles.merge(recs, on='asin').sort_values('score', ascending=False)
-
-            self.style_cf_results_table(cf_recs.shape, cf_recs.columns)
-       
-            for row_idx in range(cf_recs.shape[0]):
-                for col_idx in range(0, cf_recs.shape[1]):
-                    self.ui.tbl_cf_recs.setItem(row_idx, col_idx, QTableWidgetItem(str(cf_recs.values[row_idx, col_idx])))
+                for row_idx in range(cf_recs.shape[0]):
+                    for col_idx in range(0, cf_recs.shape[1]):
+                        self.ui.tbl_cf_recs.setItem(row_idx, col_idx, QTableWidgetItem(str(cf_recs.values[row_idx, col_idx])))
+        finally:
+            self.ui.btn_gen_cf_recs.setEnabled(True)
+            self.ui.spb_cf_recs_n.setEnabled(True)
 
 
 if __name__ == "__main__":
