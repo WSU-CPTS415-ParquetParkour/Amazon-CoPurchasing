@@ -98,13 +98,9 @@ class CollaborativeFilter:
           if m not in recommendations:
             recommendations[m] = predicted_rating
 
-      # sorted_recs_idx = sorted(recommendations.items(), key=lambda k:{k[1]: k[0]}, reverse=True)
-      top_recs = dict(hq.nlargest(n_recs, recommendations.items()))
-      # print('The list of the Recommended Products \n')
-      # rank = 1
-      # for recommended_product in sorted_rm[:num_recommended_products]:
-      #     print('{}: {} - predicted rating:{}'.format(rank, recommended_product[0], recommended_product[1]))
-      #     rank = rank + 1
+      # Returning the top n recommendations from the intermediate dictionary (JR)
+      # Converting to DataFrame for downstream merging with other data (JR)
+      top_recs = pd.DataFrame([{'asin': str(x), 'score': y} for x,y in hq.nlargest(n_recs, recommendations.items())])
       return top_recs
 
 
@@ -112,39 +108,9 @@ class CollaborativeFilter:
 def main():
   n4 = N4J()
 
-# subset workflow (JR)
-# [DONE] 1: get random user (a)
-# [DONE] 2a: get categories & groups for products user reviewed
-# [DONE] 2b: get 1 to n randomly selected categories & groups not in set from 2a
-# [DONE] 3: get random set of users who also reviewed those products
-# [PENDING] 4: get products and review ratings for all sampled users
-# [PENDING] 5: generate weighted edgelist
-
-# Switching to using data from UI query
-
-  # try:
-  #   cid = n4.get_random_customer_node()
-  #   all_groups = n4.get_product_groups()
-  #   all_categories = n4.get_product_categories()
-  #   user_groups = n4.get_user_product_groups(cid)
-  #   user_cats = n4.get_user_product_categories(cid)
-
-  #   groups_diff = set(all_groups).symmetric_difference(set(user_groups))
-  #   cats_diff = set(all_categories).symmetric_difference(set(user_cats))
-
-  #   groups_comp = rnd.sample(list(groups_diff), rnd.randint(1, len(groups_diff)))
-  #   cats_comp = rnd.sample(list(cats_diff), rnd.randint(1, len(cats_diff)))
-
-  # finally:
-  #   n4.close()
-
-
-  n4 = N4J()
   try:
     products = n4.get_rating_greater(rating='4', operand='>', limit=50)
-    # wtd_mtx = n4.get_user_product_ratings()
     wtd_mtx = n4.get_cf_set_from_asins([x['asin'] for x in products])
-    # cid = n4.get_random_customer_node()
     cid = rnd.sample(list(wtd_mtx.columns.values), 1)[0]
   finally:
     n4.close()

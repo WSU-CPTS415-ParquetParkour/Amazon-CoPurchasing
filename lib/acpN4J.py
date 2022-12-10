@@ -164,6 +164,7 @@ class N4J:
     def get_titles_from_asins(self, asins):
         with self.driver.session() as session:
             result = session.execute_read(self._get_titles_from_asins, asins)
+            result = pd.DataFrame(result)
         return result
 
     def get_rating_greater(self, rating, operand, limit=100):
@@ -508,11 +509,14 @@ class N4J:
     
     @staticmethod
     def _get_titles_from_asins(transaction, asins):
-        cypher = 'MATCH (a:PRODUCT) WHERE a.ASIN IN [%(al)s] RETURN a.title AS title' % {'al': '\'' + '\',\''.join(asins) + '\''}
+        cypher = 'MATCH (a:PRODUCT) WHERE a.ASIN IN [%(al)s] RETURN a.ASIN AS asin, a.title AS title' % {'al': '\'' + '\',\''.join(asins) + '\''}
         result = transaction.run(cypher)
 
         try:
-            return [row['title'] for row in result]
+            return [{
+                'asin'  : str(row['asin']),
+                'title' : row['title']
+            } for row in result]
         except ServiceUnavailable as exception:
             logging.error('{query} raised an error: \n {exception}'.format(query=cypher, exception=exception))
             raise
