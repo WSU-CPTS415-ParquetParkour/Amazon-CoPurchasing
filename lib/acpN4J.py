@@ -99,16 +99,18 @@ class N4J:
             result = session.execute_read(self._get_num_reviews,ASIN)
         return result
 
-    def get_user_product_ratings(self):
+    def get_user_product_ratings(self, limit=None):
+        if limit is None:
+            limit = self.default_query_limit
         with self.driver.session() as session:
-            result = session.execute_read(self._get_user_product_ratings)
+            result = session.execute_read(self._get_user_product_ratings, limit)
             result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id').replace(np.nan, 0)
         return result
     
-    def get_random_customer_node(self, rating_lower=0, review_ct_lower=1):
+    def get_random_customer_node(self, rating_lower=0, review_ct_lower=1, n_users=1):
         with self.driver.session() as session:
-            result = session.execute_read(self._get_random_customer_node, rating_lower, review_ct_lower)
-            result = result[0]
+            result = session.execute_read(self._get_random_customer_node, rating_lower, review_ct_lower, n_users)
+            # result = result[0]
         return result
 
     def get_product_groups(self):
@@ -175,6 +177,12 @@ class N4J:
             limit = self.default_query_limit
         with self.driver.session() as session:
             result = session.execute_read(self._get_rating_greater, rating, operand, limit)
+            result = pd.DataFrame(result)
+        return result
+
+    def get_users_rating_average(self, user_ids):
+        with self.driver.session() as session:
+            result = session.execute_read(self._get_users_rating_average, user_ids)
             result = pd.DataFrame(result)
         return result
 
@@ -334,9 +342,7 @@ class N4J:
             raise
 
     @staticmethod
-    def _get_user_product_ratings(transaction, limit=None):
-        if limit is None:
-            limit = self.default_query_limit
+    def _get_user_product_ratings(transaction, limit):
         cypher = 'MATCH (a:REVIEW)<-[:REVIEWED_BY]-(b) RETURN a.customer AS cust_id, b.ASIN as asin, a.rating AS rating LIMIT %(lim)s;' % {'lim': limit}
         result = transaction.run(cypher)
 
@@ -356,8 +362,8 @@ class N4J:
         cypher = ''
 
     @staticmethod
-    def _get_random_customer_node(transaction, rating_lower_limit=0, review_ct_lower_limit=1):
-        cypher = 'MATCH (a:CUSTOMER) WHERE a.rating_avg > %(rll)s AND a.review_ct > %(rcll)s RETURN a, rand() AS r ORDER BY r LIMIT 1;' % {'rll': rating_lower_limit, 'rcll': review_ct_lower_limit}
+    def _get_random_customer_node(transaction, rating_lower_limit=0, review_ct_lower_limit=1, n_usrs=1):
+        cypher = 'MATCH (a:CUSTOMER) WHERE a.rating_avg > %(rll)s AND a.review_ct > %(rcll)s RETURN a, rand() AS r ORDER BY r LIMIT %(lim)s;' % {'rll': rating_lower_limit, 'rcll': review_ct_lower_limit, 'lim': n_usrs}
         result = transaction.run(cypher)
 
         try:
@@ -472,9 +478,7 @@ class N4J:
             raise
 
     @staticmethod
-    def _get_cf_set_from_subquery(transaction, base_query, base_limit=None):
-        if base_limit is None:
-            limit = self.default_query_limit
+    def _get_cf_set_from_subquery(transaction, base_query, base_limit):
         # Receiving a query so that this can be run as a separate process in parallel to the one displaying product details from the query (JR)
         # base_query must return product ASIN aliased as asins (JR)
 
@@ -501,9 +505,7 @@ class N4J:
             raise
     
     @staticmethod
-    def _get_cf_set_from_asins(transaction, asins, limit=None):
-        if limit is None:
-            limit = self.default_query_limit
+    def _get_cf_set_from_asins(transaction, asins, limit):
         # Variant of _get_cf_set_from_subquery which expects to receive a list of ASINs (JR)
         asins = asins[:limit]
         cypher = 'MATCH (a:PRODUCT)-->(b:REVIEW) WHERE a.ASIN IN [%(al)s] RETURN a.ASIN AS asin, b.customer AS cust_id, b.rating as rating' % {'al': '\'' + '\',\''.join(asins) + '\''}
@@ -533,6 +535,19 @@ class N4J:
             logging.error('{query} raised an error: \n {exception}'.format(query=cypher, exception=exception))
             raise
 
+    @staticmethod
+    def _get_users_rating_average(transaction, usr_ids):
+        cypher = 'MATCH (a:CUSTOMER) WHERE a.Id IN %(cids)s RETURN a.Id as cust_id, a.rating_avg AS rating_avg;' % {'cids': usr_ids}
+        result = transaction.run(cypher)
+        try:
+            return [{
+                'cust_id'   : cid,
+                'rating_avg': float(rating)
+            } for cid, rating in result]
+        except ServiceUnavailable as exception:
+            logging.error('{query} raised an error: \n {exception}'.format(query=cypher, exception=exception))
+            raise
+
 
 # Just for temporary testing, may be removed when ready to be sourced by other files (JR)
 def main():
@@ -542,19 +557,20 @@ def main():
     try:
         # n4.add_indices()
         node_set = n4.get_rating_greater(rating='4', operand='>', limit=100)
-        properties = {lbl: n4.get_node_properties(lbl) for lbl in nodes}
+        # properties = {lbl: n4.get_node_properties(lbl) for lbl in nodes}
         # with open(os.path.join(project_root, 'etc', 'node_property_keys.json'), 'w', 1, 'utf-8') as f: json.dump(properties, f)
-        wtd_mtx = n4.get_user_product_ratings()
-        cid = n4.get_random_customer_node()
-        all_groups = n4.get_product_groups()
-        all_categories = n4.get_product_categories()
+        # wtd_mtx = n4.get_user_product_ratings()
+        cid = n4.get_random_customer_node(n_users=5)
+        usr_rating_avg = n4.get_users_rating_average(cid)
+        # all_groups = n4.get_product_groups()
+        # all_categories = n4.get_product_categories()
         # user_peers = n4.get_user_product_peers(cid) #TODO
-        user_groups = n4.get_user_product_groups(cid)
-        user_cats = n4.get_user_product_categories(cid)
-        user_grps_and_cats = n4.get_user_product_groups_and_categories(cid)
+        # user_groups = n4.get_user_product_groups(cid)
+        # user_cats = n4.get_user_product_categories(cid)
+        # user_grps_and_cats = n4.get_user_product_groups_and_categories(cid)
 
-        groups_diff = set(all_groups).symmetric_difference(set(user_groups))
-        cats_diff = set(all_categories).symmetric_difference(set(user_cats))
+        # groups_diff = set(all_groups).symmetric_difference(set(user_groups))
+        # cats_diff = set(all_categories).symmetric_difference(set(user_cats))
 
     finally:
         n4.close()
