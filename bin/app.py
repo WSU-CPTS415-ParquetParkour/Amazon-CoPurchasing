@@ -53,6 +53,8 @@ class AcpApp(QMainWindow):
         self.ui.pushButton.clicked.connect(self.Clicked4)
         self.ui.btn_gen_cf_recs.clicked.connect(self.btn_gen_cf_recs_clicked)
         self.ui.btn_reset.clicked.connect(self.reset_ui)
+        self.ui.spb_search_value.setValue(0)
+        self.ui.spb_search_value.clear()
         self.products = dict()
         self.n4 = N4J()
 
@@ -101,12 +103,14 @@ class AcpApp(QMainWindow):
         # Empty out downstream elements (JR)
         self.ui.listWidget.clearSelection()
         self.ui.listWidget_2.clear()
-        self.ui.textEdit.clear()
+        # self.ui.textEdit.clear()
         # self.ui.textEdit_2.clear()
         # self.ui.lst_cf_recs.clear()
         self.ui.spb_cf_recs_n.setValue(3)
         self.reset_query_results_table()
         self.reset_cf_results_table()
+        self.ui.spb_search_value.setValue(0)
+        self.ui.spb_search_value.clear()
         
 
         #DEMO CODE NOT NECESSARY FOR NOW
@@ -151,10 +155,10 @@ class AcpApp(QMainWindow):
 
         self.gridLayout.addWidget(self.listWidget_2, 1, 3, 1, 1)
 
-        self.textEdit = QTextEdit(self.centralwidget)
-        self.textEdit.setObjectName(u"textEdit")
+        # self.textEdit = QTextEdit(self.centralwidget)
+        # self.textEdit.setObjectName(u"textEdit")
 
-        self.gridLayout.addWidget(self.textEdit, 2, 0, 1, 1)
+        # self.gridLayout.addWidget(self.textEdit, 2, 0, 1, 1)
 
         self.label_2 = QLabel(self.centralwidget)
         self.label_2.setObjectName(u"label_2")
@@ -245,7 +249,8 @@ class AcpApp(QMainWindow):
             self.ui.pushButton.setEnabled(False)
 
             global numeric_val
-            numeric_val = self.ui.textEdit.toPlainText()
+            # numeric_val = self.ui.textEdit.toPlainText()
+            numeric_val = self.ui.spb_search_value.value()
         
             self.products = n.get_rating_greater(rating=numeric_val,operand=condition)
             # self.ui.textEdit_2.append(str(self.products.values))
@@ -270,24 +275,28 @@ class AcpApp(QMainWindow):
         # Empty out downstream elements (JR)
         self.ui.listWidget_2.clear()
         self.ui.listWidget_3.clearSelection()
-        self.ui.textEdit.clear()
+        # self.ui.textEdit.clear()
         # self.ui.textEdit_2.clear()
         # self.ui.lst_cf_recs.clear()
         self.reset_query_results_table()
         self.reset_cf_results_table()
+        self.ui.spb_search_value.setValue(0)
+        self.ui.spb_search_value.clear()
 
     def property_key_changed(self):
         # Empty out downstream elements (JR)
         self.ui.listWidget_3.clearSelection()
-        self.ui.textEdit.clear()
+        # self.ui.textEdit.clear()
         # self.ui.textEdit_2.clear()
         # self.ui.lst_cf_recs.clear()
         self.reset_query_results_table()
         self.reset_cf_results_table()
+        self.ui.spb_search_value.setValue(0)
+        self.ui.spb_search_value.clear()
 
     def condition_op_changed(self):
         # Empty out downstream elements (JR)
-        self.ui.textEdit.clear()
+        # self.ui.textEdit.clear()
         # self.ui.textEdit_2.clear()
         # self.ui.lst_cf_recs.clear()
         self.reset_query_results_table()
