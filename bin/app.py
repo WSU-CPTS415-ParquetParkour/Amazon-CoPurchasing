@@ -54,7 +54,6 @@ class AcpApp(QMainWindow):
         self.ui.btn_gen_cf_recs.clicked.connect(self.btn_gen_cf_recs_clicked)
         self.ui.btn_reset.clicked.connect(self.reset_ui)
         self.ui.spb_search_value.setValue(0)
-        self.ui.spb_search_value.clear()
 
         self.statusBar = self.statusBar()
 
@@ -63,6 +62,7 @@ class AcpApp(QMainWindow):
 
         self.reset_query_results_table()
         self.reset_cf_results_table()
+        self.check_enable_query_button()
         self.reset_statusbar()
 
     def loadList(self):
@@ -116,7 +116,6 @@ class AcpApp(QMainWindow):
         self.reset_query_results_table()
         self.reset_cf_results_table()
         self.ui.spb_search_value.setValue(0)
-        self.ui.spb_search_value.clear()
     
     def reset_statusbar(self):
         self.statusBar.clearMessage()
@@ -126,6 +125,13 @@ class AcpApp(QMainWindow):
         self.statusBar.clearMessage()
         self.statusBar.showMessage(str(msg))
         self.statusBar.repaint()
+    
+    def check_enable_query_button(self):
+        # Keep the query button disabled unless all criteria are filled out (JR)
+        if len(self.ui.listWidget.selectedItems()) != 0 and len(self.ui.listWidget_2.selectedItems()) != 0 and len(self.ui.listWidget_3.selectedItems()) != 0:
+            self.ui.pushButton.setEnabled(True)
+        else:
+            self.ui.pushButton.setEnabled(False)
 
         #DEMO CODE NOT NECESSARY FOR NOW
                 # try:
@@ -248,6 +254,7 @@ class AcpApp(QMainWindow):
             self.ui.listWidget_2.setEnabled(False)
             self.ui.listWidget_3.setEnabled(False)
             self.ui.pushButton.setEnabled(False)
+            self.update_statusbar('Processing query...')
 
             global numeric_val
             numeric_val = self.ui.spb_search_value.value()
@@ -285,7 +292,7 @@ class AcpApp(QMainWindow):
         self.reset_query_results_table()
         self.reset_cf_results_table()
         self.ui.spb_search_value.setValue(0)
-        self.ui.spb_search_value.clear()
+        self.check_enable_query_button()
 
     def property_key_changed(self):
         # Empty out downstream elements (JR)
@@ -293,12 +300,13 @@ class AcpApp(QMainWindow):
         self.reset_query_results_table()
         self.reset_cf_results_table()
         self.ui.spb_search_value.setValue(0)
-        self.ui.spb_search_value.clear()
+        self.check_enable_query_button()
 
     def condition_op_changed(self):
         # Empty out downstream elements (JR)
         self.reset_query_results_table()
         self.reset_cf_results_table()
+        self.check_enable_query_button()
 
 
     def btn_gen_cf_recs_clicked(self):
