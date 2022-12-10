@@ -166,6 +166,12 @@ class N4J:
             result = session.execute_read(self._get_titles_from_asins, asins)
         return result
 
+    def get_rating_greater(self, rating, operand, limit=100):
+        with self.driver.session() as session:
+            result = session.execute_read(self._get_rating_greater, rating, operand, limit)
+            result = pd.DataFrame(result)
+        return result
+
 
     @staticmethod
     def _add_indices(transaction):
@@ -236,11 +242,6 @@ class N4J:
         cypher = ''
         result = transaction.run(cypher)
         return
-
-    def get_rating_greater(self, rating, operand, limit=50):
-        with self.driver.session() as session:
-            result = session.execute_read(self._get_rating_greater, rating, operand, limit)
-        return result
 
     @staticmethod
     def _get_rating_greater(transaction, rating, operand, limit=50):
