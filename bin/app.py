@@ -55,6 +55,10 @@ class AcpApp(QMainWindow):
         self.ui.btn_reset.clicked.connect(self.reset_ui)
         self.ui.spb_search_value.setValue(0)
         self.ui.spb_search_value.clear()
+
+        self.reset_query_results_table()
+        self.reset_cf_results_table()
+
         self.products = dict()
         self.n4 = N4J()
 
@@ -70,22 +74,22 @@ class AcpApp(QMainWindow):
         self.ui.listWidget_3.addItem('>=')
         self.ui.listWidget_3.addItem('>')
     
-    def style_query_results_table(self, data_dims, header_vals):
+    def style_query_results_table(self, data_dims=(0, 2)):
         # Expects to receive a two-value tuple in the form (row_count, column_count) (JR)
         self.ui.tbl_query_results.horizontalHeader().setFixedHeight(40)
         self.ui.tbl_query_results.setColumnCount(data_dims[1])
         self.ui.tbl_query_results.setRowCount(data_dims[0])
-        self.ui.tbl_query_results.setHorizontalHeaderLabels(header_vals)
+        self.ui.tbl_query_results.setHorizontalHeaderLabels(['ASIN', 'Title'])
         self.ui.tbl_query_results.setColumnWidth(0, int(round(self.ui.tbl_query_results.width() * 0.25, 0)))
         self.ui.tbl_query_results.setColumnWidth(1, self.ui.tbl_query_results.width() - self.ui.tbl_query_results.columnWidth(0))
         self.ui.tbl_query_results.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.Alignment(QtCore.Qt.TextWordWrap))
     
-    def style_cf_results_table(self, data_dims, header_vals):
+    def style_cf_results_table(self, data_dims=(0, 3)):
         # Expects to receive a two-value tuple in the form (row_count, column_count) (JR)
         self.ui.tbl_cf_recs.horizontalHeader().setFixedHeight(40)
         self.ui.tbl_cf_recs.setColumnCount(data_dims[1])
         self.ui.tbl_cf_recs.setRowCount(data_dims[0])
-        self.ui.tbl_cf_recs.setHorizontalHeaderLabels(header_vals)
+        self.ui.tbl_cf_recs.setHorizontalHeaderLabels(['ASIN', 'Title', 'Score'])
         self.ui.tbl_cf_recs.setColumnWidth(0, int(round(self.ui.tbl_query_results.width() * 0.25, 0)))
         self.ui.tbl_cf_recs.setColumnWidth(1, int(round(self.ui.tbl_query_results.width() * 0.80, 0)))
         self.ui.tbl_cf_recs.setColumnWidth(2, int(round(self.ui.tbl_query_results.width() * 0.20, 0)))
@@ -94,10 +98,12 @@ class AcpApp(QMainWindow):
     def reset_query_results_table(self):
         for i in reversed(range(self.ui.tbl_query_results.rowCount())):
             self.ui.tbl_query_results.removeRow(i)
+        self.style_query_results_table()
 
     def reset_cf_results_table(self):
         for i in reversed(range(self.ui.tbl_cf_recs.rowCount())):
             self.ui.tbl_cf_recs.removeRow(i)
+        self.style_cf_results_table()
 
     def reset_ui(self):
         # Empty out downstream elements (JR)
@@ -255,11 +261,17 @@ class AcpApp(QMainWindow):
             self.products = n.get_rating_greater(rating=numeric_val,operand=condition)
             # self.ui.textEdit_2.append(str(self.products.values))
 
-            self.style_query_results_table(self.products.shape, list(self.products.columns))
+            if len(self.products) == 0:
+                self.style_query_results_table((1, 2))
+                self.ui.tbl_query_results.setItem(0, 0, QTableWidgetItem('Error'))
+                self.ui.tbl_query_results.setItem(0, 1, QTableWidgetItem('No products found for the chosen criteria.'))
 
-            for row_idx in range(self.products.shape[0]):
-                for col_idx in range(0, self.products.shape[1]):
-                    self.ui.tbl_query_results.setItem(row_idx, col_idx, QTableWidgetItem(str(self.products.values[row_idx, col_idx])))
+            else:
+                self.style_query_results_table(self.products.shape)
+
+                for row_idx in range(self.products.shape[0]):
+                    for col_idx in range(0, self.products.shape[1]):
+                        self.ui.tbl_query_results.setItem(row_idx, col_idx, QTableWidgetItem(str(self.products.values[row_idx, col_idx])))
         finally:
             self.ui.listWidget.setEnabled(True)
             self.ui.listWidget_2.setEnabled(True)
@@ -312,10 +324,10 @@ class AcpApp(QMainWindow):
 
             if len(self.products) == 0:
                 # self.ui.lst_cf_recs.addItem('No products to derive recommendations from.')
-                self.style_cf_results_table((1, 1), ['result', 'message'])
-                self.ui.tbl_cf_recs.setItem(0,0, QTableWidgetItem('Error'))
-                self.ui.tbl_cf_recs.setItem(0,0, QTableWidgetItem('No products to derive recommendations from.'))
-            
+                self.style_cf_results_table((1, 3))
+                self.ui.tbl_cf_recs.setItem(0, 0, QTableWidgetItem('Error'))
+                self.ui.tbl_cf_recs.setItem(0, 1, QTableWidgetItem('No products to derive recommendations from.'))
+
             else:
                 wtd_mtx = self.n4.get_cf_set_from_asins(list(self.products['asin']))
                 cid = rnd.sample(list(wtd_mtx.columns.values), 1)[0]
@@ -326,7 +338,7 @@ class AcpApp(QMainWindow):
 
                 cf_recs = rec_titles.merge(recs, on='asin').sort_values('score', ascending=False)
 
-                self.style_cf_results_table(cf_recs.shape, cf_recs.columns)
+                self.style_cf_results_table(cf_recs.shape)
         
                 for row_idx in range(cf_recs.shape[0]):
                     for col_idx in range(0, cf_recs.shape[1]):
