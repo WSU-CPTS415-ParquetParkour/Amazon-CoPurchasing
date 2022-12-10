@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1004</width>
-    <height>544</height>
+    <height>531</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,29 +39,57 @@
       <widget class="QListWidget" name="lst_cf_recs">
        <property name="geometry">
         <rect>
-         <x>110</x>
+         <x>320</x>
          <y>30</y>
-         <width>371</width>
+         <width>161</width>
          <height>201</height>
         </rect>
        </property>
       </widget>
+      <widget class="QTableWidget" name="tbl_cf_recs">
+       <property name="geometry">
+        <rect>
+         <x>105</x>
+         <y>30</y>
+         <width>211</width>
+         <height>201</height>
+        </rect>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="sortingEnabled">
+        <bool>true</bool>
+       </property>
+       <attribute name="verticalHeaderMinimumSectionSize">
+        <number>22</number>
+       </attribute>
+      </widget>
      </widget>
     </item>
     <item row="2" column="0">
-     <widget class="QGroupBox" name="groupBox_3">
+     <widget class="QGroupBox" name="grp_query_results">
       <property name="title">
        <string>Query Results:</string>
       </property>
-      <widget class="QTextEdit" name="textEdit_2">
+      <widget class="QTableWidget" name="tbl_query_results">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>30</y>
          <width>481</width>
-         <height>291</height>
+         <height>201</height>
         </rect>
        </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="sortingEnabled">
+        <bool>true</bool>
+       </property>
+       <attribute name="verticalHeaderMinimumSectionSize">
+        <number>22</number>
+       </attribute>
       </widget>
      </widget>
     </item>
@@ -215,6 +243,19 @@
        </property>
        <property name="text">
         <string>-&gt;</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btn_reset">
+       <property name="geometry">
+        <rect>
+         <x>860</x>
+         <y>130</y>
+         <width>101</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Reset</string>
        </property>
       </widget>
      </widget>
