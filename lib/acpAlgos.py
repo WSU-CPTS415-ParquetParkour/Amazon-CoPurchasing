@@ -109,7 +109,7 @@ def main():
   n4 = N4J()
 
   try:
-    products = n4.get_rating_greater(rating='4', operand='>', limit=50)
+    products = n4.get_rating_greater(rating='4', operand='>')
     wtd_mtx = n4.get_cf_set_from_asins([x['asin'] for x in products])
     cid = rnd.sample(list(wtd_mtx.columns.values), 1)[0]
   finally:
