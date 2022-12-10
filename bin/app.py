@@ -56,11 +56,14 @@ class AcpApp(QMainWindow):
         self.ui.spb_search_value.setValue(0)
         self.ui.spb_search_value.clear()
 
-        self.reset_query_results_table()
-        self.reset_cf_results_table()
+        self.statusBar = self.statusBar()
 
         self.products = dict()
         self.n4 = N4J()
+
+        self.reset_query_results_table()
+        self.reset_cf_results_table()
+        self.reset_statusbar()
 
     def loadList(self):
         self.ui.listWidget.clear()
@@ -114,7 +117,15 @@ class AcpApp(QMainWindow):
         self.reset_cf_results_table()
         self.ui.spb_search_value.setValue(0)
         self.ui.spb_search_value.clear()
-        
+    
+    def reset_statusbar(self):
+        self.statusBar.clearMessage()
+        self.statusBar.showMessage('Ready')
+
+    def update_statusbar(self, msg):
+        self.statusBar.clearMessage()
+        self.statusBar.showMessage(str(msg))
+        self.statusBar.repaint()
 
         #DEMO CODE NOT NECESSARY FOR NOW
                 # try:
@@ -244,6 +255,7 @@ class AcpApp(QMainWindow):
             self.products = n.get_rating_greater(rating=numeric_val,operand=condition)
 
             if len(self.products) == 0:
+                self.update_statusbar('Error')
                 self.style_query_results_table((1, 2))
                 self.ui.tbl_query_results.setItem(0, 0, QTableWidgetItem('Error'))
                 self.ui.tbl_query_results.setItem(0, 1, QTableWidgetItem('No products found for the chosen criteria.'))
@@ -259,6 +271,7 @@ class AcpApp(QMainWindow):
             self.ui.listWidget_2.setEnabled(True)
             self.ui.listWidget_3.setEnabled(True)
             self.ui.pushButton.setEnabled(True)
+            self.reset_statusbar()
 
     # def Clicked3(self,item):
 	#     QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
@@ -293,8 +306,10 @@ class AcpApp(QMainWindow):
         try:
             self.ui.btn_gen_cf_recs.setEnabled(False)
             self.ui.spb_cf_recs_n.setEnabled(False)
+            self.update_statusbar('Calculating recommendations...')
 
             if len(self.products) == 0:
+                self.update_statusbar('Error')
                 self.style_cf_results_table((1, 3))
                 self.ui.tbl_cf_recs.setItem(0, 0, QTableWidgetItem('Error'))
                 self.ui.tbl_cf_recs.setItem(0, 1, QTableWidgetItem('No products to derive recommendations from.'))
@@ -317,7 +332,7 @@ class AcpApp(QMainWindow):
         finally:
             self.ui.btn_gen_cf_recs.setEnabled(True)
             self.ui.spb_cf_recs_n.setEnabled(True)
-
+            self.reset_statusbar()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
