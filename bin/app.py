@@ -70,7 +70,7 @@ class AcpApp(QMainWindow):
     
     def style_query_results_table(self, data_dims, header_vals):
         # Expects to receive a two-value tuple in the form (row_count, column_count) (JR)
-        self.ui.tbl_query_results.horizontalHeader().setFixedHeight(50)
+        self.ui.tbl_query_results.horizontalHeader().setFixedHeight(40)
         self.ui.tbl_query_results.setColumnCount(data_dims[1])
         self.ui.tbl_query_results.setRowCount(data_dims[0])
         self.ui.tbl_query_results.setHorizontalHeaderLabels(header_vals)
@@ -78,12 +78,23 @@ class AcpApp(QMainWindow):
         self.ui.tbl_query_results.setColumnWidth(1, self.ui.tbl_query_results.width() - self.ui.tbl_query_results.columnWidth(0))
         self.ui.tbl_query_results.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.Alignment(QtCore.Qt.TextWordWrap))
     
+    def style_cf_results_table(self, data_dims, header_vals):
+        # Expects to receive a two-value tuple in the form (row_count, column_count) (JR)
+        self.ui.tbl_cf_recs.horizontalHeader().setFixedHeight(40)
+        self.ui.tbl_cf_recs.setColumnCount(data_dims[1])
+        self.ui.tbl_cf_recs.setRowCount(data_dims[0])
+        self.ui.tbl_cf_recs.setHorizontalHeaderLabels(header_vals)
+        self.ui.tbl_cf_recs.setColumnWidth(0, int(round(self.ui.tbl_query_results.width() * 0.25, 0)))
+        self.ui.tbl_cf_recs.setColumnWidth(1, int(round(self.ui.tbl_query_results.width() * 0.80, 0)))
+        self.ui.tbl_cf_recs.setColumnWidth(2, int(round(self.ui.tbl_query_results.width() * 0.20, 0)))
+        self.ui.tbl_cf_recs.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.Alignment(QtCore.Qt.TextWordWrap))
+    
     def reset_query_results_table(self):
         for i in reversed(range(self.ui.tbl_query_results.rowCount())):
             self.ui.tbl_query_results.removeRow(i)
 
     def reset_cf_results_table(self):
-        for i in reversed(range(self.tbl_cf_recs.rowCount())):
+        for i in reversed(range(self.ui.tbl_cf_recs.rowCount())):
             self.ui.tbl_cf_recs.removeRow(i)
 
     def reset_ui(self):
@@ -280,16 +291,20 @@ class AcpApp(QMainWindow):
             self.ui.lst_cf_recs.addItem('No products to derive recommendations from.')
         
         else:
-            wtd_mtx = self.n4.get_cf_set_from_asins(list(set(x['asin'] for x in self.products)))
+            wtd_mtx = self.n4.get_cf_set_from_asins(list(self.products['asin']))
             cid = rnd.sample(list(wtd_mtx.columns.values), 1)[0]
 
             cf = CollaborativeFilter(wtd_mtx, cid)
             recs = cf.recommend_product(cid, 5)
-            rec_titles = self.n4.get_titles_from_asins(recs)
+            rec_titles = self.n4.get_titles_from_asins(recs['asin'])
 
-            for row in rec_titles:
-                self.ui.lst_cf_recs.addItem(row)
+            cf_recs = rec_titles.merge(recs, on='asin').sort_values('score', ascending=False)
+
+            self.style_cf_results_table(cf_recs.shape, cf_recs.columns)
        
+            for row_idx in range(cf_recs.shape[0]):
+                for col_idx in range(0, cf_recs.shape[1]):
+                    self.ui.tbl_cf_recs.setItem(row_idx, col_idx, QTableWidgetItem(str(cf_recs.values[row_idx, col_idx])))
 
 
 if __name__ == "__main__":
