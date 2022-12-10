@@ -109,9 +109,6 @@ class AcpApp(QMainWindow):
         # Empty out downstream elements (JR)
         self.ui.listWidget.clearSelection()
         self.ui.listWidget_2.clear()
-        # self.ui.textEdit.clear()
-        # self.ui.textEdit_2.clear()
-        # self.ui.lst_cf_recs.clear()
         self.ui.spb_cf_recs_n.setValue(3)
         self.reset_query_results_table()
         self.reset_cf_results_table()
@@ -161,11 +158,6 @@ class AcpApp(QMainWindow):
 
         self.gridLayout.addWidget(self.listWidget_2, 1, 3, 1, 1)
 
-        # self.textEdit = QTextEdit(self.centralwidget)
-        # self.textEdit.setObjectName(u"textEdit")
-
-        # self.gridLayout.addWidget(self.textEdit, 2, 0, 1, 1)
-
         self.label_2 = QLabel(self.centralwidget)
         self.label_2.setObjectName(u"label_2")
 
@@ -181,11 +173,6 @@ class AcpApp(QMainWindow):
         self.pushButton.setMouseTracking(False)
 
         self.gridLayout.addWidget(self.pushButton, 3, 1, 1, 2)
-
-        # self.textEdit_2 = QTextEdit(self.centralwidget)
-        # self.textEdit_2.setObjectName(u"textEdit_2")
-
-        # self.gridLayout.addWidget(self.textEdit_2, 4, 0, 1, 4)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
@@ -213,8 +200,6 @@ class AcpApp(QMainWindow):
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Go!", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
     # retranslateUi
-
-
 
     category_item = ''
     value_item = ''
@@ -248,18 +233,15 @@ class AcpApp(QMainWindow):
     def Clicked4(self):
         try:
             n=N4J()
-            # self.ui.textEdit_2.clear()
             self.ui.listWidget.setEnabled(False)
             self.ui.listWidget_2.setEnabled(False)
             self.ui.listWidget_3.setEnabled(False)
             self.ui.pushButton.setEnabled(False)
 
             global numeric_val
-            # numeric_val = self.ui.textEdit.toPlainText()
             numeric_val = self.ui.spb_search_value.value()
         
             self.products = n.get_rating_greater(rating=numeric_val,operand=condition)
-            # self.ui.textEdit_2.append(str(self.products.values))
 
             if len(self.products) == 0:
                 self.style_query_results_table((1, 2))
@@ -287,9 +269,6 @@ class AcpApp(QMainWindow):
         # Empty out downstream elements (JR)
         self.ui.listWidget_2.clear()
         self.ui.listWidget_3.clearSelection()
-        # self.ui.textEdit.clear()
-        # self.ui.textEdit_2.clear()
-        # self.ui.lst_cf_recs.clear()
         self.reset_query_results_table()
         self.reset_cf_results_table()
         self.ui.spb_search_value.setValue(0)
@@ -298,9 +277,6 @@ class AcpApp(QMainWindow):
     def property_key_changed(self):
         # Empty out downstream elements (JR)
         self.ui.listWidget_3.clearSelection()
-        # self.ui.textEdit.clear()
-        # self.ui.textEdit_2.clear()
-        # self.ui.lst_cf_recs.clear()
         self.reset_query_results_table()
         self.reset_cf_results_table()
         self.ui.spb_search_value.setValue(0)
@@ -308,9 +284,6 @@ class AcpApp(QMainWindow):
 
     def condition_op_changed(self):
         # Empty out downstream elements (JR)
-        # self.ui.textEdit.clear()
-        # self.ui.textEdit_2.clear()
-        # self.ui.lst_cf_recs.clear()
         self.reset_query_results_table()
         self.reset_cf_results_table()
 
@@ -320,10 +293,8 @@ class AcpApp(QMainWindow):
         try:
             self.ui.btn_gen_cf_recs.setEnabled(False)
             self.ui.spb_cf_recs_n.setEnabled(False)
-            # self.ui.lst_cf_recs.clear()
 
             if len(self.products) == 0:
-                # self.ui.lst_cf_recs.addItem('No products to derive recommendations from.')
                 self.style_cf_results_table((1, 3))
                 self.ui.tbl_cf_recs.setItem(0, 0, QTableWidgetItem('Error'))
                 self.ui.tbl_cf_recs.setItem(0, 1, QTableWidgetItem('No products to derive recommendations from.'))
