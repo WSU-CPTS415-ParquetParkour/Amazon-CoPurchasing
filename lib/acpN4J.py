@@ -20,6 +20,7 @@ class N4J:
             self.endpoint,
             auth=(config.get('database_connection', 'dbuser'), config.get('database_connection', 'dbpass'))
         )
+        self.default_query_limit = int(config.get('app', 'default_query_limit'))
 
     def close(self):
         self.driver.close()
@@ -155,7 +156,9 @@ class N4J:
             result = session.execute_read(self._get_user_product_peer_groups_and_categories, user_id)
         return result
 
-    def get_cf_set_from_asins(self, asins, limit=100):
+    def get_cf_set_from_asins(self, asins, limit=None):
+        if limit is None:
+            limit = self.default_query_limit
         with self.driver.session() as session:
             result = session.execute_read(self._get_cf_set_from_asins, asins, limit)
             result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id').replace(np.nan, 0)
@@ -167,7 +170,9 @@ class N4J:
             result = pd.DataFrame(result)
         return result
 
-    def get_rating_greater(self, rating, operand, limit=100):
+    def get_rating_greater(self, rating, operand, limit=None):
+        if limit is None:
+            limit = self.default_query_limit
         with self.driver.session() as session:
             result = session.execute_read(self._get_rating_greater, rating, operand, limit)
             result = pd.DataFrame(result)
@@ -244,7 +249,9 @@ class N4J:
         return
 
     @staticmethod
-    def _get_rating_greater(transaction, rating, operand, limit=50):
+    def _get_rating_greater(transaction, rating, operand, limit=None):
+        if limit is None:
+            limit = self.default_query_limit
         # Specify unique node id instead of letting neo4j define it - find out what the limitations of this are
         cypher = ' '.join([
             'MATCH (n:PRODUCT) WHERE n.review_rating_avg %(operand)s %(rating)s RETURN n.ASIN AS asin, n.title AS title ORDER BY n DESC LIMIT %(lim)s;'%{'operand':operand,'rating':rating, 'lim': limit}
@@ -327,7 +334,9 @@ class N4J:
             raise
 
     @staticmethod
-    def _get_user_product_ratings(transaction, limit=100):
+    def _get_user_product_ratings(transaction, limit=None):
+        if limit is None:
+            limit = self.default_query_limit
         cypher = 'MATCH (a:REVIEW)<-[:REVIEWED_BY]-(b) RETURN a.customer AS cust_id, b.ASIN as asin, a.rating AS rating LIMIT %(lim)s;' % {'lim': limit}
         result = transaction.run(cypher)
 
@@ -463,7 +472,9 @@ class N4J:
             raise
 
     @staticmethod
-    def _get_cf_set_from_subquery(transaction, base_query, base_limit=100):
+    def _get_cf_set_from_subquery(transaction, base_query, base_limit=None):
+        if base_limit is None:
+            limit = self.default_query_limit
         # Receiving a query so that this can be run as a separate process in parallel to the one displaying product details from the query (JR)
         # base_query must return product ASIN aliased as asins (JR)
 
@@ -490,7 +501,9 @@ class N4J:
             raise
     
     @staticmethod
-    def _get_cf_set_from_asins(transaction, asins, limit=100):
+    def _get_cf_set_from_asins(transaction, asins, limit=None):
+        if limit is None:
+            limit = self.default_query_limit
         # Variant of _get_cf_set_from_subquery which expects to receive a list of ASINs (JR)
         asins = asins[:limit]
         cypher = 'MATCH (a:PRODUCT)-->(b:REVIEW) WHERE a.ASIN IN [%(al)s] RETURN a.ASIN AS asin, b.customer AS cust_id, b.rating as rating' % {'al': '\'' + '\',\''.join(asins) + '\''}
@@ -528,7 +541,7 @@ def main():
 
     try:
         # n4.add_indices()
-        node_set = n4.get_rating_greater(rating='4', operand='>', limit=50)
+        node_set = n4.get_rating_greater(rating='4', operand='>', limit=100)
         properties = {lbl: n4.get_node_properties(lbl) for lbl in nodes}
         # with open(os.path.join(project_root, 'etc', 'node_property_keys.json'), 'w', 1, 'utf-8') as f: json.dump(properties, f)
         wtd_mtx = n4.get_user_product_ratings()
