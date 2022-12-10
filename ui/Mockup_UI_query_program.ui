@@ -19,14 +19,14 @@
    </property>
    <layout class="QGridLayout" name="gridLayout">
     <item row="2" column="1">
-     <widget class="QGroupBox" name="groupBox_2">
+     <widget class="QGroupBox" name="grp_cf_recs">
       <property name="title">
        <string>Recommendations from Query:</string>
       </property>
       <widget class="QPushButton" name="btn_gen_cf_recs">
        <property name="geometry">
         <rect>
-         <x>390</x>
+         <x>400</x>
          <y>20</y>
          <width>90</width>
          <height>28</height>
@@ -54,6 +54,32 @@
        <attribute name="verticalHeaderMinimumSectionSize">
         <number>22</number>
        </attribute>
+      </widget>
+      <widget class="QLabel" name="lbl_cf_recs_n">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>191</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Number of Recommendations:</string>
+       </property>
+      </widget>
+      <widget class="QSpinBox" name="spb_cf_recs_n">
+       <property name="geometry">
+        <rect>
+         <x>210</x>
+         <y>20</y>
+         <width>46</width>
+         <height>26</height>
+        </rect>
+       </property>
+       <property name="value">
+        <number>3</number>
+       </property>
       </widget>
      </widget>
     </item>
@@ -84,7 +110,7 @@
      </widget>
     </item>
     <item row="0" column="0" colspan="2">
-     <widget class="QGroupBox" name="groupBox">
+     <widget class="QGroupBox" name="grp_query_params">
       <property name="title">
        <string>Enter a query below</string>
       </property>
