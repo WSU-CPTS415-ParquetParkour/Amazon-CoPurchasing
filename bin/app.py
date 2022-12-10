@@ -104,6 +104,7 @@ class AcpApp(QMainWindow):
         self.ui.textEdit.clear()
         # self.ui.textEdit_2.clear()
         # self.ui.lst_cf_recs.clear()
+        self.ui.spb_cf_recs_n.setValue(3)
         self.reset_query_results_table()
         self.reset_cf_results_table()
         
@@ -296,8 +297,8 @@ class AcpApp(QMainWindow):
     def btn_gen_cf_recs_clicked(self):
         # Generate list of recommendations based on the subset returned to the UI (JR)
         try:
-            self.ui.btn_gen_cf_recs.setEnabled(True)
-            self.ui.spb_cf_recs_n.setEnabled(True)
+            self.ui.btn_gen_cf_recs.setEnabled(False)
+            self.ui.spb_cf_recs_n.setEnabled(False)
             # self.ui.lst_cf_recs.clear()
 
             if len(self.products) == 0:
@@ -311,7 +312,7 @@ class AcpApp(QMainWindow):
                 cid = rnd.sample(list(wtd_mtx.columns.values), 1)[0]
 
                 cf = CollaborativeFilter(wtd_mtx, cid)
-                recs = cf.recommend_product(cid, 5)
+                recs = cf.recommend_product(cid, self.ui.spb_cf_recs_n.value())
                 rec_titles = self.n4.get_titles_from_asins(recs['asin'])
 
                 cf_recs = rec_titles.merge(recs, on='asin').sort_values('score', ascending=False)
