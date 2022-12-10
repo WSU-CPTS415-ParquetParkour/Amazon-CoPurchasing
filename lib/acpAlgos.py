@@ -19,7 +19,7 @@ from acpN4J import N4J
 class CollaborativeFilter:
   # Refactor of CD's initial collaborative filtering implementation to be called by the application (JR)
   def __init__(self, adj_mtx_wtd, uid, neighbors=3):
-    # Expects to receive an adjacency matrix stored in a DataFrame (JR)
+    # Expects to receive an adjacency matrix stored in a DataFrame where the row indices are ASINs and column names are customer IDs (JR)
     self.adj_mtx = adj_mtx_wtd
     self.knn = NearestNeighbors(metric='cosine', algorithm='brute')
 
@@ -32,8 +32,7 @@ class CollaborativeFilter:
     self.collab_filter()
 
   def collab_filter(self):
-
-    # t: movie_title, m: the row number of t in df
+    # t: movie_title, m: the row number of t in df (CD)
     for m,t in list(enumerate(self.adj_mtx.index)):
 
       # find movies without ratings by user_4
@@ -41,8 +40,8 @@ class CollaborativeFilter:
         sim_products = self.indices[m].tolist()
         product_distances = self.distances[m].tolist()
 
-        # Generally, this is the case: indices[3] = [3 6 7]. The movie itself is in the first place.
-        # In this case, we take off 3 from the list. Then, indices[3] == [6 7] to have the nearest NEIGHBORS in the list.
+        # Generally, this is the case: indices[3] = [3 6 7]. The movie itself is in the first place. (CD)
+        # In this case, we take off 3 from the list. Then, indices[3] == [6 7] to have the nearest NEIGHBORS in the list. (CD)
         if m in sim_products:
           id_product = sim_products.index(m)
           sim_products.remove(m)
@@ -59,17 +58,17 @@ class CollaborativeFilter:
 
         for s in range(0, len(product_similarity)):
 
-          # check if the rating of a similar movie is zero
+          # check if the rating of a similar movie is zero (CD)
           if self.adj_mtx.iloc[sim_products[s], self.customer_index] == 0:
 
-            # if the rating is zero, ignore the rating and the similarity in calculating the predicted rating
+            # if the rating is zero, ignore the rating and the similarity in calculating the predicted rating (CD)
             if len(product_similarity_copy) == (3 - 1):
               product_similarity_copy.pop(s)
 
             else:
               product_similarity_copy.pop(s-(len(product_similarity)-len(product_similarity_copy)))
 
-          # if the rating is not zero, use the rating and similarity in the calculation
+          # if the rating is not zero, use the rating and similarity in the calculation (CD)
           else:
             nominator = nominator + product_similarity[s]*self.adj_mtx.iloc[sim_products[s], self.customer_index]
 
@@ -81,7 +80,7 @@ class CollaborativeFilter:
           else:
             predicted_r = 0
 
-        # if all the ratings of the similar products are zero, then predicted rating should be zero
+        # if all the ratings of the similar products are zero, then predicted rating should be zero (CD)
         else:
           predicted_r = 0
 
@@ -89,6 +88,7 @@ class CollaborativeFilter:
     return
 
   def recommend_product(self, user, n_recs=3):
+      # Switching to dictionary to reduce time costs some (JR)
       recommendations = dict()
 
       for m in self.adj_mtx[self.adj_mtx[user] == 0].index.tolist():
@@ -104,7 +104,7 @@ class CollaborativeFilter:
       return top_recs
 
 
-#TODO: Just for temporary testing, will need to be removed when ready to be sourced by other files (JR)
+# Just for temporary testing, may be removed when ready to be sourced by other files (JR)
 def main():
   n4 = N4J()
 
@@ -115,8 +115,11 @@ def main():
   finally:
     n4.close()
 
-  cf = CollaborativeFilter(wtd_mtx, cid)
-  cf.recommend_product(cid, 3)
+    cf = CollaborativeFilter(wtd_mtx, cid)
+    recs = cf.recommend_product(cid, self.ui.spb_cf_recs_n.value())
+    rec_titles = self.n4.get_titles_from_asins(recs['asin'])
+
+    cf_recs = rec_titles.merge(recs, on='asin').sort_values('score', ascending=False)
 
   return
 

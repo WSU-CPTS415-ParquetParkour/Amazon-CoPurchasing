@@ -186,7 +186,6 @@ class N4J:
             'CREATE TEXT INDEX idx_text_review_customer IF NOT EXISTS FOR (n:REVIEW) ON (n.customer);',
             'CREATE TEXT INDEX idx_text_category_path IF NOT EXISTS FOR (n:CATEGORY) ON (n.path);'
         ]
-        # TODO: Needs to be run in write mode (JR)
         result = [transaction.run(c) for c in cyphers]
 
 
@@ -221,8 +220,8 @@ class N4J:
     
     @staticmethod
     def _create_acp_n4_edge(transaction, src, dest, relation):
-        # Performance improvement?  Generate edges by all ASINs in 'similar'
-        # May require the 'similar' set of ASINs added to each node?  Restructuring of dict?
+        # Performance improvement?  Generate edges by all ASINs in 'similar' (JR)
+        # May require the 'similar' set of ASINs added to each node?  Restructuring of dict? (JR)
         # Example:
             # MATCH (a:PRODUCT)
             # WHERE a.ASIN IN ['039474067X','0679730672','0679750541','1400030668','0896086704']
@@ -232,8 +231,8 @@ class N4J:
             # WHERE b.ASIN IN a.similar
             # CREATE (a)-[:%(rel)s]->(b)
 
-        # TODO: Add primary key for nodes; UNIQUE property
-        # Specify unique node id instead of letting neo4j define it - find out what the limitations of this are
+        # TODO: Add primary key for nodes; UNIQUE property (JR)
+        # Specify unique node id instead of letting neo4j define it - find out what the limitations of this are (JR)
         cypher = 'MATCH (a:PRODUCT), (b:PRODUCT) WHERE a.ASIN = \'%(from)s\' AND b.ASIN = \'%(to)s\' CREATE (a)-[:%(rel)s]->(b)' % {'from':src, 'to':dest, 'rel':relation}
         result = transaction.run(cypher)
         return
@@ -522,7 +521,7 @@ class N4J:
             raise
 
 
-#TODO: Just for temporary testing, will need to be removed when ready to be sourced by other files (JR)
+# Just for temporary testing, may be removed when ready to be sourced by other files (JR)
 def main():
     n4 = N4J()
     nodes = ['CATEGORY', 'CUSTOMER', 'PRODUCT', 'REVIEW']
