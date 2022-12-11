@@ -266,10 +266,12 @@ class AcpApp(QMainWindow):
             self.ui.pushButton.setEnabled(False)
             self.update_statusbar('Processing query...')
 
-            global numeric_val
-            numeric_val = self.ui.spb_search_value.value()
-
-            self.products = n.get_rating_greater(rating=numeric_val,operand=condition)
+            self.products = n.get_rating_greater(
+                node=self.ui.listWidget.selectedItems()[0].text(),
+                prop_key=self.ui.listWidget_2.selectedItems()[0].text(),
+                rating=self.ui.spb_search_value.value(),
+                operand=self.ui.listWidget_3.selectedItems()[0].text()
+            )
 
             if len(self.products) == 0:
                 self.update_statusbar('Error')
