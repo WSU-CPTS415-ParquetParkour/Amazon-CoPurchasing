@@ -169,27 +169,22 @@ class N4J:
             result = session.execute_read(self._get_user_product_peer_groups_and_categories, user_id)
         return result
 
-    def get_cf_set_from_asins(self, asins, limit=None, replace_nans_with_avg=False):
+    def get_cf_set_from_asins(self, asins, limit=None, min_review_ct=3, replace_nans_with_avg=False):
         if limit is None:
             limit = self.default_query_limit
         with self.driver.session() as session:
-            result = session.execute_read(self._get_cf_set_from_asins, asins, limit)
+            result = session.execute_read(self._get_cf_set_from_asins, asins, limit, min_review_ct)
 
         # Conditional replacement on NaN values with each user's average rating (JR)
         if replace_nans_with_avg:
-            # result = pd.pivot_table(pd.DataFrame(result), values='rating', index='cust_id', columns='asin')
             result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id')
             usr_rating_avg = self.get_users_rating_average(list(set(result.columns)))
             usr_rating_avg = pd.pivot_table(usr_rating_avg, values='rating_avg', columns='cust_id')
-            # result = result.merge(usr_rating_avg, on='cust_id').apply(lambda x: x['rating_avg'] if x.isNull() else x, axis = 1)
 
             for col in result.columns:
                 result[col].fillna(usr_rating_avg[col].rating_avg, inplace=True)
-            # for col in result.columns:
-            #     result[col].mask(result[col].isnull(), usr_rating_avg[col]['rating_avg'], inplace=True)
         else:
-            result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id')
-            result.replace(np.nan, 0)
+            result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id').replace(np.nan, 0)
 
         return result
 
@@ -213,7 +208,6 @@ class N4J:
             result = session.execute_read(self._get_users_rating_average, user_ids)
             result = pd.DataFrame(result)
         return result
-
 
     @staticmethod
     def _add_indices(transaction):
@@ -533,10 +527,10 @@ class N4J:
             raise
     
     @staticmethod
-    def _get_cf_set_from_asins(transaction, asins, limit):
+    def _get_cf_set_from_asins(transaction, asins, limit, rev_ct_min=3):
         # Variant of _get_cf_set_from_subquery which expects to receive a list of ASINs (JR)
         asins = asins[:limit]
-        cypher = 'MATCH (a:PRODUCT)-->(b:REVIEW) WHERE a.ASIN IN [%(al)s] RETURN a.ASIN AS asin, b.customer AS cust_id, b.rating as rating' % {'al': '\'' + '\',\''.join(asins) + '\''}
+        cypher = 'MATCH (a:PRODUCT)-->(b:REVIEW) WHERE a.ASIN IN %(al)s AND a.review_ct >= %(rcm)s RETURN a.ASIN AS asin, b.customer AS cust_id, b.rating as rating' % {'al': asins, 'rcm': rev_ct_min}
         result = transaction.run(cypher)
 
         try:
