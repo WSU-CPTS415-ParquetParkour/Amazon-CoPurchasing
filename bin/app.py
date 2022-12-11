@@ -323,20 +323,29 @@ class AcpApp(QMainWindow):
                 self.ui.tbl_cf_recs.setItem(0, 1, QTableWidgetItem('No products to derive recommendations from.'))
 
             else:
+                self.update_statusbar('Gathering ratings...')
                 wtd_mtx = self.n4.get_cf_set_from_asins(list(self.products['asin']))
                 cid = rnd.sample(list(wtd_mtx.columns.values), 1)[0]
 
+                self.update_statusbar('Calculating recommendations...')
                 cf = CollaborativeFilter(wtd_mtx, cid)
                 recs = cf.recommend_product(cid, self.ui.spb_cf_recs_n.value())
-                rec_titles = self.n4.get_titles_from_asins(recs['asin'])
 
-                cf_recs = rec_titles.merge(recs, on='asin').sort_values('score', ascending=False)
+                if recs.shape[0] > 0:
+                    rec_titles = self.n4.get_titles_from_asins(recs['asin'])
 
-                self.style_cf_results_table(cf_recs.shape)
-        
-                for row_idx in range(cf_recs.shape[0]):
-                    for col_idx in range(0, cf_recs.shape[1]):
-                        self.ui.tbl_cf_recs.setItem(row_idx, col_idx, QTableWidgetItem(str(cf_recs.values[row_idx, col_idx])))
+                    cf_recs = rec_titles.merge(recs, on='asin').sort_values('score', ascending=False)
+
+                    self.style_cf_results_table(cf_recs.shape)
+
+                    for row_idx in range(cf_recs.shape[0]):
+                        for col_idx in range(0, cf_recs.shape[1]):
+                            self.ui.tbl_cf_recs.setItem(row_idx, col_idx, QTableWidgetItem(str(cf_recs.values[row_idx, col_idx])))
+                else:
+                    self.style_cf_results_table((1, 3))
+                    self.ui.tbl_cf_recs.setItem(0, 0, QTableWidgetItem('Error'))
+                    self.ui.tbl_cf_recs.setItem(0, 1, QTableWidgetItem('No recommendations available.'))
+
         finally:
             self.ui.btn_gen_cf_recs.setEnabled(True)
             self.ui.spb_cf_recs_n.setEnabled(True)
