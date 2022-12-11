@@ -194,11 +194,11 @@ class N4J:
             result = pd.DataFrame(result)
         return result
 
-    def get_rating_greater(self, rating, operand, limit=None):
+    def get_rating_greater(self, node, prop_key, rating, operand, limit=None):
         if limit is None:
             limit = self.default_query_limit
         with self.driver.session() as session:
-            result = session.execute_read(self._get_rating_greater, rating, operand, limit)
+            result = session.execute_read(self._get_rating_greater, node, prop_key, rating, operand, limit)
             result = pd.DataFrame(result)
 
         return result
@@ -279,13 +279,22 @@ class N4J:
         return
 
     @staticmethod
-    def _get_rating_greater(transaction, rating, operand, limit=None):
+    def _get_rating_greater(transaction, node, prop_key, rating, operand, limit=None):
         if limit is None:
             limit = self.default_query_limit
-        # Specify unique node id instead of letting neo4j define it - find out what the limitations of this are
-        cypher = ' '.join([
-            'MATCH (n:PRODUCT) WHERE n.review_rating_avg %(operand)s %(rating)s RETURN n.ASIN AS asin, n.title AS title ORDER BY n DESC LIMIT %(lim)s;'%{'operand':operand,'rating':rating, 'lim': limit}
-            ])
+        # Adjusting to accommodate multiple node types and properties (JR)
+        base_query = 'MATCH (n:%(n)s) WHERE n.%(pk)s %(operand)s %(rating)s RETURN n LIMIT %(lim)s' % {'n': node, 'pk': prop_key, 'operand':operand,'rating':rating, 'lim': limit}
+
+        match node:
+            case 'PRODUCT':
+                # Specify unique node id instead of letting neo4j define it - find out what the limitations of this are
+                cypher = ' '.join(['CALL {', base_query, '} WITH n RETURN DISTINCT n.ASIN AS asin, n.title AS title ORDER BY n DESC LIMIT %(lim)s;' % {'lim': limit}])
+            case 'CATEGORY':
+                cypher = ' '.join(['CALL {', base_query, '} WITH n MATCH (n)<--(a:PRODUCT) RETURN DISTINCT a.ASIN AS asin, a.title AS title LIMIT %(lim)s;' % {'lim': limit}])
+            case 'CUSTOMER':
+                cypher = ' '.join(['CALL {', base_query, '} WITH n MATCH (n)-->()<--(a:PRODUCT) RETURN DISTINCT a.ASIN AS asin, a.title AS title LIMIT %(lim)s;' % {'lim': limit}])
+            case 'REVIEW':
+                cypher = ' '.join(['CALL {', base_query, '} WITH n MATCH (n)<--(a:PRODUCT) RETURN DISTINCT a.ASIN AS asin, a.title AS title LIMIT %(lim)s;' % {'lim': limit}])
         # print(cypher)
         result = transaction.run(cypher)
 
