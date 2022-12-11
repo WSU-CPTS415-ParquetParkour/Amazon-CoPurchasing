@@ -1,0 +1,47 @@
+{
+    "CATEGORY": [
+        "path_depth"
+    ],
+    "CUSTOMER": [
+        "votes_sd",
+        "helpful_avg",
+        "review_ct",
+        "rating_avg",
+        "votes_total",
+        "helpful_ratio_sd",
+        "votes_avg",
+        "review_mttr",
+        "helpful_sd",
+        "rating_sd",
+        "rating_wtd",
+        "helpful_ratio_avg"
+    ],
+    "PRODUCT": [
+        "salesrank",
+        "review_ct",
+        "category_path_ct",
+        "review_rating_avg_wtd",
+        "review_rating_wtd_sd",
+        "similar_to_ct",
+        "review_downloaded_ct",
+        "customers_unique_ct",
+        "review_votes_sd",
+        "review_rating_sd",
+        "review_votes_avg",
+        "review_helpful_ratio_avg",
+        "review_helpful_ratio_sd",
+        "category_path_depth_avg",
+        "category_path_depth_sd",
+        "review_rating_wtd_avg",
+        "review_rating_avg",
+        "review_mttr",
+        "review_votes_total"
+    ],
+    "REVIEW": [
+        "rating",
+        "votes",
+        "helpful_ratio",
+        "review_rating_wtd",
+        "helpful"
+    ]
+}

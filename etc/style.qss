@@ -1,0 +1,27 @@
+/* Manually setting height is currently blocked by an active bug https://bugreports.qt.io/browse/QTBUG-64003 */
+QTableWidget {
+    padding: 0px;
+    margin: 0px;
+    font-size: 11px;
+    text-align: center;
+    vertical-align: middle;
+}
+QHeaderView::section {
+    padding: 0px;
+    margin: 0px;
+    font-size: 12px;
+    text-align: center;
+    vertical-align: middle;
+}
+QTableWidgetItem {
+    padding: 0px;
+    margin: 0px;
+    font-size: 11px;
+}
+QTableView::item {
+    padding: 0px;
+    margin: 0px;
+    font-size: 11px;
+    text-align: center;
+    vertical-align: middle;
+}
