@@ -35,7 +35,7 @@ class CollaborativeFilter:
     # t: movie_title, m: the row number of t in df (CD)
     for m,t in list(enumerate(self.adj_mtx.index)):
 
-      # find movies without ratings by user_4
+      # find movies without ratings by user_4 (CD)
       if self.adj_mtx.iloc[m, self.customer_index] == 0:
         sim_products = self.indices[m].tolist()
         product_distances = self.distances[m].tolist()
