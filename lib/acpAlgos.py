@@ -112,14 +112,14 @@ def main():
     products = n4.get_rating_greater(rating='4', operand='>')
     wtd_mtx = n4.get_cf_set_from_asins([x['asin'] for x in products])
     cid = rnd.sample(list(wtd_mtx.columns.values), 1)[0]
-  finally:
-    n4.close()
 
     cf = CollaborativeFilter(wtd_mtx, cid)
     recs = cf.recommend_product(cid, self.ui.spb_cf_recs_n.value())
     rec_titles = self.n4.get_titles_from_asins(recs['asin'])
 
     cf_recs = rec_titles.merge(recs, on='asin').sort_values('score', ascending=False)
+  finally:
+    n4.close()
 
   return
 
