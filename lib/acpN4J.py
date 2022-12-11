@@ -283,12 +283,12 @@ class N4J:
         if limit is None:
             limit = self.default_query_limit
         # Adjusting to accommodate multiple node types and properties (JR)
-        base_query = 'MATCH (n:%(n)s) WHERE n.%(pk)s %(operand)s %(rating)s RETURN n LIMIT %(lim)s' % {'n': node, 'pk': prop_key, 'operand':operand,'rating':rating, 'lim': limit}
+        base_query = 'MATCH (n:%(n)s) WHERE n.%(pk)s %(operand)s %(rating)s RETURN n LIMIT %(lim)s' % {'n': node, 'pk': prop_key, 'operand':operand, 'rating':rating, 'lim': limit}
 
         match node:
             case 'PRODUCT':
                 # Specify unique node id instead of letting neo4j define it - find out what the limitations of this are
-                cypher = ' '.join(['CALL {', base_query, '} WITH n RETURN DISTINCT n.ASIN AS asin, n.title AS title ORDER BY n DESC LIMIT %(lim)s;' % {'lim': limit}])
+                cypher = ' '.join(['CALL {', base_query, '} WITH n MATCH (n) RETURN DISTINCT n.ASIN AS asin, n.title AS title LIMIT %(lim)s;' % {'lim': limit}])
             case 'CATEGORY':
                 cypher = ' '.join(['CALL {', base_query, '} WITH n MATCH (n)<--(a:PRODUCT) RETURN DISTINCT a.ASIN AS asin, a.title AS title LIMIT %(lim)s;' % {'lim': limit}])
             case 'CUSTOMER':
