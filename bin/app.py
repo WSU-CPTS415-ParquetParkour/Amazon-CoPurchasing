@@ -63,6 +63,7 @@ class AcpApp(QMainWindow):
         self.reset_query_results_table()
         self.reset_cf_results_table()
         self.check_enable_query_button()
+        self.check_enable_rec_button()
         self.reset_statusbar()
 
     def loadList(self):
@@ -102,6 +103,7 @@ class AcpApp(QMainWindow):
         for i in reversed(range(self.ui.tbl_query_results.rowCount())):
             self.ui.tbl_query_results.removeRow(i)
         self.style_query_results_table()
+        self.products = dict()
 
     def reset_cf_results_table(self):
         for i in reversed(range(self.ui.tbl_cf_recs.rowCount())):
@@ -132,6 +134,14 @@ class AcpApp(QMainWindow):
             self.ui.pushButton.setEnabled(True)
         else:
             self.ui.pushButton.setEnabled(False)
+
+    def check_enable_rec_button(self):
+        # Keep the recommendation button disabled unless a valid query has been completed (JR)
+        # Using the product list as a proxy (JR)
+        if len(self.products) > 0:
+            self.ui.btn_gen_cf_recs.setEnabled(True)
+        else:
+            self.ui.btn_gen_cf_recs.setEnabled(False)
 
         #DEMO CODE NOT NECESSARY FOR NOW
                 # try:
@@ -258,7 +268,7 @@ class AcpApp(QMainWindow):
 
             global numeric_val
             numeric_val = self.ui.spb_search_value.value()
-        
+
             self.products = n.get_rating_greater(rating=numeric_val,operand=condition)
 
             if len(self.products) == 0:
@@ -278,6 +288,7 @@ class AcpApp(QMainWindow):
             self.ui.listWidget_2.setEnabled(True)
             self.ui.listWidget_3.setEnabled(True)
             self.ui.pushButton.setEnabled(True)
+            self.check_enable_rec_button()
             self.reset_statusbar()
 
     # def Clicked3(self,item):
@@ -293,6 +304,7 @@ class AcpApp(QMainWindow):
         self.reset_cf_results_table()
         self.ui.spb_search_value.setValue(0)
         self.check_enable_query_button()
+        self.check_enable_rec_button()
 
     def property_key_changed(self):
         # Empty out downstream elements (JR)
@@ -301,12 +313,14 @@ class AcpApp(QMainWindow):
         self.reset_cf_results_table()
         self.ui.spb_search_value.setValue(0)
         self.check_enable_query_button()
+        self.check_enable_rec_button()
 
     def condition_op_changed(self):
         # Empty out downstream elements (JR)
         self.reset_query_results_table()
         self.reset_cf_results_table()
         self.check_enable_query_button()
+        self.check_enable_rec_button()
 
 
     def btn_gen_cf_recs_clicked(self):
@@ -331,7 +345,7 @@ class AcpApp(QMainWindow):
                 cf = CollaborativeFilter(wtd_mtx, cid)
                 recs = cf.recommend_product(cid, self.ui.spb_cf_recs_n.value())
 
-                if recs.shape[0] > 0:
+                if len(recs) > 0:
                     rec_titles = self.n4.get_titles_from_asins(recs['asin'])
 
                     cf_recs = rec_titles.merge(recs, on='asin').sort_values('score', ascending=False)
