@@ -99,12 +99,23 @@ class N4J:
             result = session.execute_read(self._get_num_reviews,ASIN)
         return result
 
-    def get_user_product_ratings(self, limit=None):
+    def get_user_product_ratings(self, limit=None, replace_nans_with_avg=False):
         if limit is None:
             limit = self.default_query_limit
         with self.driver.session() as session:
             result = session.execute_read(self._get_user_product_ratings, limit)
-            result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id').replace(np.nan, 0)
+            result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id')
+
+        # Conditional replacement on NaN values with each user's average rating (JR)
+        if replace_nans_with_avg:
+            usr_rating_avg = self.get_users_rating_average(list(result.columns))
+            usr_rating_avg = pd.pivot_table(usr_rating_avg, values='rating_avg', columns='cust_id')
+
+            for col in result.columns:
+                result[col].mask(result[col].isnull(), usr_rating_avg[col]['rating_avg'], inplace=True)
+        else:
+            result.replace(np.nan, 0)
+
         return result
     
     def get_random_customer_node(self, rating_lower=0, review_ct_lower=1, n_users=1):
@@ -158,12 +169,28 @@ class N4J:
             result = session.execute_read(self._get_user_product_peer_groups_and_categories, user_id)
         return result
 
-    def get_cf_set_from_asins(self, asins, limit=None):
+    def get_cf_set_from_asins(self, asins, limit=None, replace_nans_with_avg=False):
         if limit is None:
             limit = self.default_query_limit
         with self.driver.session() as session:
             result = session.execute_read(self._get_cf_set_from_asins, asins, limit)
-            result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id').replace(np.nan, 0)
+
+        # Conditional replacement on NaN values with each user's average rating (JR)
+        if replace_nans_with_avg:
+            # result = pd.pivot_table(pd.DataFrame(result), values='rating', index='cust_id', columns='asin')
+            result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id')
+            usr_rating_avg = self.get_users_rating_average(list(set(result.columns)))
+            usr_rating_avg = pd.pivot_table(usr_rating_avg, values='rating_avg', columns='cust_id')
+            # result = result.merge(usr_rating_avg, on='cust_id').apply(lambda x: x['rating_avg'] if x.isNull() else x, axis = 1)
+
+            for col in result.columns:
+                result[col].fillna(usr_rating_avg[col].rating_avg, inplace=True)
+            # for col in result.columns:
+            #     result[col].mask(result[col].isnull(), usr_rating_avg[col]['rating_avg'], inplace=True)
+        else:
+            result = pd.pivot_table(pd.DataFrame(result), values='rating', index='asin', columns='cust_id')
+            result.replace(np.nan, 0)
+
         return result
 
     def get_titles_from_asins(self, asins):
@@ -178,6 +205,7 @@ class N4J:
         with self.driver.session() as session:
             result = session.execute_read(self._get_rating_greater, rating, operand, limit)
             result = pd.DataFrame(result)
+
         return result
 
     def get_users_rating_average(self, user_ids):
@@ -560,6 +588,7 @@ def main():
         # properties = {lbl: n4.get_node_properties(lbl) for lbl in nodes}
         # with open(os.path.join(project_root, 'etc', 'node_property_keys.json'), 'w', 1, 'utf-8') as f: json.dump(properties, f)
         # wtd_mtx = n4.get_user_product_ratings()
+        wtd_mtx = n4.get_cf_set_from_asins(list(node_set['asin']))
         cid = n4.get_random_customer_node(n_users=5)
         usr_rating_avg = n4.get_users_rating_average(cid)
         # all_groups = n4.get_product_groups()
